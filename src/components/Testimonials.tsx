@@ -4,6 +4,9 @@ import { Star, Quote } from "lucide-react";
 import testimonial1 from "@/assets/testimonial-1.jpg";
 import testimonial2 from "@/assets/testimonial-2.jpg";
 import testimonial3 from "@/assets/testimonial-3.jpg";
+import testimonial4 from "@/assets/testimonial-4.jpg";
+import testimonial5 from "@/assets/testimonial-5.jpg";
+import testimonial6 from "@/assets/testimonial-6.jpg";
 
 const Testimonials = () => {
   const testimonials = [
@@ -30,6 +33,30 @@ const Testimonials = () => {
       image: testimonial3,
       rating: 5,
       text: "The team at LF Insurance helped us design a comprehensive group health insurance plan for our employees. Their attention to detail and commitment to finding the best rates made the process smooth. Our employees are very satisfied with the coverage."
+    },
+    {
+      name: "Fatuma Selemani",
+      position: "Restaurant Owner",
+      company: "Msimbazi Street Kitchen",
+      image: testimonial4,
+      rating: 5,
+      text: "When fire damaged my restaurant, LF Insurance Brokers handled my claim with such professionalism and speed. They guided me through every step and ensured I received fair compensation quickly. I was back in business within weeks thanks to their excellent service."
+    },
+    {
+      name: "David Mbwambo",
+      position: "Fleet Manager",
+      company: "Coastal Transport Services",
+      image: testimonial5,
+      rating: 5,
+      text: "Managing insurance for our 50+ vehicle fleet was challenging until we found LF Insurance Brokers. They negotiated excellent rates, streamlined our policy management, and their 24/7 claims support has been invaluable when accidents happen on the road."
+    },
+    {
+      name: "Mzee Hassan Kitwana",
+      position: "Property Developer",
+      company: "Kitwana Developments",
+      image: testimonial6,
+      rating: 5,
+      text: "After 30 years in business, I can say LF Insurance Brokers provides the most comprehensive and affordable property insurance in Dar es Salaam. Their expertise in construction risks and attention to detail gives me complete peace of mind on all my projects."
     }
   ];
 
@@ -104,7 +131,7 @@ const Testimonials = () => {
           <p className="text-muted-foreground mb-4">Join thousands of satisfied customers</p>
           <div className="flex items-center justify-center space-x-4">
             <div className="flex -space-x-2">
-              {[testimonial1, testimonial2, testimonial3].map((image, index) => (
+              {[testimonial1, testimonial2, testimonial3, testimonial4, testimonial5, testimonial6].slice(0, 5).map((image, index) => (
                 <img 
                   key={index}
                   src={image} 
