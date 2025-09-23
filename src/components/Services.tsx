@@ -50,10 +50,17 @@ const Services = () => {
     },
     {
       icon: Users,
-      title: "Life Insurance",
-      description: "Secure your family's financial future with term life, whole life, and group life insurance options.",
-      features: ["Term Life", "Whole Life", "Group Life", "Investment Plans"],
+      title: "Personal Life Insurance",
+      description: "Individual life insurance policies designed to protect your personal financial obligations and goals.",
+      features: ["Term Life Insurance", "Whole Life Insurance", "Universal Life", "Accidental Death Cover"],
       color: "text-indigo-600"
+    },
+    {
+      icon: Heart,
+      title: "Family Insurance",
+      description: "Comprehensive family protection plans covering all members with flexible coverage options.",
+      features: ["Family Life Cover", "Child Education Plans", "Spouse Protection", "Family Income Benefit"],
+      color: "text-pink-600"
     }
   ];
 
