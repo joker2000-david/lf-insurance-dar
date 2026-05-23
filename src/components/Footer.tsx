@@ -17,31 +17,29 @@ const Footer = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const footerLinks = {
+  const footerLinks: Record<string, { label: string; href: string }[]> = {
     "Insurance Services": [
-      "Auto Insurance",
-      "Health Insurance", 
-      "Property Insurance",
-      "Business Insurance",
-      "Travel Insurance",
-      "Life Insurance"
+      { label: "Motor Insurance", href: "/services#motor-insurance" },
+      { label: "Health Insurance", href: "/services#health-insurance" },
+      { label: "Fire & Perils", href: "/services#fire-perils-insurance" },
+      { label: "Marine Insurance", href: "/services#marine-insurance" },
+      { label: "Travel Insurance", href: "/services#travel-insurance" },
+      { label: "Family Insurance", href: "/services#family-insurance" },
     ],
     "Quick Links": [
-      "About Us",
-      "Get Quote",
-      "File Claim",
-      "Contact Us",
-      "FAQs",
-      "Blog"
+      { label: "About Us", href: "/about" },
+      { label: "Get Quote", href: "/contact" },
+      { label: "Contact Us", href: "/contact" },
+      { label: "FAQs", href: "/faq" },
+      { label: "Blog", href: "/blog" },
     ],
     "Legal": [
-      "Privacy Policy",
-      "Terms of Service", 
-      "Claims Policy",
-      "Complaints Procedure",
-      "Regulatory Information",
-      "Disclaimer"
-    ]
+      { label: "Privacy Policy", href: "#" },
+      { label: "Terms of Service", href: "#" },
+      { label: "Claims Policy", href: "#" },
+      { label: "Complaints Procedure", href: "#" },
+      { label: "Regulatory Information", href: "#" },
+    ],
   };
 
   const socialLinks = [
@@ -85,14 +83,14 @@ const Footer = () => {
                   <MapPin className="h-5 w-5 text-accent" />
                   <span className="text-sm">Dar es Salaam, Tanzania</span>
                 </div>
-                <div className="flex items-center space-x-3">
+                <a href="tel:+255713464894" className="flex items-center space-x-3 hover:text-accent transition-colors">
                   <Phone className="h-5 w-5 text-accent" />
-                  <span className="text-sm">+255 123 456 789</span>
-                </div>
-                <div className="flex items-center space-x-3">
+                  <span className="text-sm">+255 713 464 894</span>
+                </a>
+                <a href="mailto:info@lfinsurance.co.tz" className="flex items-center space-x-3 hover:text-accent transition-colors">
                   <Mail className="h-5 w-5 text-accent" />
                   <span className="text-sm">info@lfinsurance.co.tz</span>
-                </div>
+                </a>
                 <div className="flex items-center space-x-3">
                   <Clock className="h-5 w-5 text-accent" />
                   <span className="text-sm">Mon-Fri: 8AM-6PM</span>
@@ -106,12 +104,12 @@ const Footer = () => {
                 <h4 className="text-lg font-bold mb-6">{title}</h4>
                 <ul className="space-y-3">
                   {links.map((link) => (
-                    <li key={link}>
-                      <a 
-                        href="#" 
+                    <li key={link.label}>
+                      <a
+                        href={link.href}
                         className="text-primary-foreground/80 hover:text-accent transition-colors duration-200 text-sm"
                       >
-                        {link}
+                        {link.label}
                       </a>
                     </li>
                   ))}
