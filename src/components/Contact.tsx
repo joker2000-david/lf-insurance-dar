@@ -21,7 +21,7 @@ const Contact = () => {
     {
       icon: Phone,
       title: "Call Us",
-      details: ["+255 123 456 789", "+255 987 654 321", "24/7 Emergency Claims"],
+      details: ["+255 713 464 894", "24/7 Emergency Claims"],
       color: "text-green-600"
     },
     {
