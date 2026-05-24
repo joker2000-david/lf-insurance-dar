@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      quote_submissions: {
+        Row: {
+          created_at: string
+          details: Json
+          email: string | null
+          emailed: boolean
+          full_name: string
+          id: string
+          insurance_type: string
+          phone: string
+          tin_number: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          email?: string | null
+          emailed?: boolean
+          full_name: string
+          id?: string
+          insurance_type: string
+          phone: string
+          tin_number?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          email?: string | null
+          emailed?: boolean
+          full_name?: string
+          id?: string
+          insurance_type?: string
+          phone?: string
+          tin_number?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
