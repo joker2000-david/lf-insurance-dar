@@ -9,103 +9,112 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Loader2, Send, ShieldCheck } from "lucide-react";
 import {
-  medicalPlans, ageBands, premiumRates, motorCoverTypes, otherInsuranceTypes,
+  ArrowLeft, ArrowRight, Car, CheckCircle2, Loader2, Send, ShieldCheck, Trash2, Users,
+} from "lucide-react";
+import {
+  recommendMotorCategory, recommendFamilyCategory, computeFamilyPremiums,
+  medicalPlans, type VehicleUse, type CoverLevel, type FamilyMember,
 } from "@/data/medical-plans";
+
+const RECIPIENT_EMAIL = "Fredy.msangi@lfinsurance.co.tz";
 
 const buyerSchema = z.object({
   full_name: z.string().trim().min(2, "Full name is required").max(120),
   phone: z.string().trim().min(7, "Active phone number is required").max(30),
   tin_number: z.string().trim().min(5, "TIN Number is required").max(30),
-  email: z.string().trim().email("Valid email recommended for response").max(160).optional().or(z.literal("")),
+  email: z.string().trim().email("Valid email recommended").max(160).optional().or(z.literal("")),
 });
 
-type InsuranceTab = "motor" | "medical" | "other";
+type Choice = "motor" | "family" | null;
+type Step = "choose" | "details" | "result";
+
+const fmtTZS = (n: number) => "TZS " + Math.round(n).toLocaleString("en-US");
 
 const Quote = () => {
-  const [tab, setTab] = useState<InsuranceTab>("motor");
+  const [choice, setChoice] = useState<Choice>(null);
+  const [step, setStep] = useState<Step>("choose");
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
-  // Buyer
   const [buyer, setBuyer] = useState({ full_name: "", phone: "", tin_number: "", email: "" });
 
-  // Motor
+  // Motor state
   const [motor, setMotor] = useState({
     registration_number: "",
-    cover_type: motorCoverTypes[0] as string,
-    vehicle_make_model: "",
-    year_of_manufacture: "",
+    use: "private" as VehicleUse,
+    cover: "comprehensive" as CoverLevel,
+    make_model: "",
+    year: "",
     sum_insured: "",
-    has_claim_history: "No",
+    claim_history: "No",
     notes: "",
   });
 
-  // Medical
-  const [plan, setPlan] = useState<string>(medicalPlans[0].key);
-  const [lives, setLives] = useState<Record<string, string>>(
-    Object.fromEntries(ageBands.map((b) => [b, "0"]))
-  );
-  const [medicalNotes, setMedicalNotes] = useState("");
-
-  // Other
-  const [other, setOther] = useState({
-    insurance_type: otherInsuranceTypes[0] as string,
-    sum_insured: "",
-    description: "",
+  // Family state
+  const [family, setFamily] = useState<{ members: FamilyMember[]; budget: string; notes: string }>({
+    members: [
+      { role: "Principal (You)", age: 35 },
+      { role: "Spouse", age: 32 },
+    ],
+    budget: "",
+    notes: "",
   });
 
-  const estimatedPremium = useMemo(() => {
-    return ageBands.reduce((acc, band) => {
-      const n = parseInt(lives[band] || "0", 10) || 0;
-      const rate = premiumRates[band]?.[plan] ?? 0;
-      return acc + n * rate;
-    }, 0);
-  }, [lives, plan]);
+  const motorResult = useMemo(() => {
+    const sum = parseInt(motor.sum_insured.replace(/\D/g, "") || "0", 10);
+    const yr = parseInt(motor.year || "0", 10);
+    if (motor.cover === "comprehensive" && !sum) return null;
+    return recommendMotorCategory(motor.use, motor.cover, sum, yr || undefined);
+  }, [motor]);
 
-  const fmt = (n: number) => "TZS " + n.toLocaleString("en-US");
+  const familyResult = useMemo(() => {
+    const valid = family.members.filter((m) => m.age >= 0 && m.age <= 59);
+    if (valid.length === 0) return null;
+    const budget = parseInt(family.budget.replace(/\D/g, "") || "0", 10);
+    const rec = recommendFamilyCategory(valid, budget || undefined);
+    const all = computeFamilyPremiums(valid);
+    return { rec, all };
+  }, [family]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const addKid = () =>
+    setFamily((f) => ({ ...f, members: [...f.members, { role: `Child ${f.members.filter((m) => m.role.startsWith("Child")).length + 1}`, age: 5 }] }));
+  const removeMember = (i: number) =>
+    setFamily((f) => ({ ...f, members: f.members.filter((_, idx) => idx !== i) }));
+  const updateMember = (i: number, patch: Partial<FamilyMember>) =>
+    setFamily((f) => ({ ...f, members: f.members.map((m, idx) => (idx === i ? { ...m, ...patch } : m)) }));
+
+  const handleSubmit = async () => {
     const parsed = buyerSchema.safeParse(buyer);
     if (!parsed.success) {
       toast({ title: "Please check your details", description: parsed.error.issues[0].message, variant: "destructive" });
       return;
     }
 
-    let details: Record<string, unknown> = {};
     let insurance_type = "";
+    let details: Record<string, unknown> = {};
 
-    if (tab === "motor") {
-      if (!motor.registration_number.trim()) {
-        toast({ title: "Registration number required", description: "Please provide the vehicle registration number.", variant: "destructive" });
-        return;
-      }
+    if (choice === "motor") {
       insurance_type = "Motor";
-      details = { ...motor };
-    } else if (tab === "medical") {
-      const totalLives = ageBands.reduce((a, b) => a + (parseInt(lives[b] || "0", 10) || 0), 0);
-      if (totalLives === 0) {
-        toast({ title: "Add at least one member", description: "Specify the number of lives per age band.", variant: "destructive" });
-        return;
-      }
-      insurance_type = "Medical / Health";
       details = {
-        plan,
-        lives,
-        total_lives: totalLives,
-        estimated_annual_premium_tzs: estimatedPremium,
-        notes: medicalNotes,
+        ...motor,
+        recommended_category: motorResult?.category,
+        indicative_annual_premium_tzs: motorResult?.annualPremium,
       };
-    } else {
-      insurance_type = `Other — ${other.insurance_type}`;
-      details = { ...other };
+    } else if (choice === "family") {
+      insurance_type = "Family / Medical";
+      details = {
+        members: family.members,
+        annual_budget_tzs: family.budget,
+        notes: family.notes,
+        recommended_plan: familyResult?.rec.plan,
+        recommended_annual_premium_tzs: familyResult?.rec.annualPremium,
+        all_plan_premiums_tzs: familyResult?.all,
+      };
     }
 
     setSubmitting(true);
@@ -120,17 +129,12 @@ const Quote = () => {
       });
       if (error) throw error;
 
-      // Fire-and-forget email notification (works once email domain is configured)
       supabase.functions.invoke("send-quote-email", {
-        body: {
-          insurance_type,
-          buyer: { ...buyer, email: buyer.email?.trim() || null },
-          details,
-        },
-      }).catch(() => { /* silently ignored — submission is saved */ });
+        body: { recipient: RECIPIENT_EMAIL, insurance_type, buyer, details },
+      }).catch(() => { /* saved regardless */ });
 
       setDone(true);
-      toast({ title: "Request received", description: "Our team will contact you shortly on the number provided." });
+      toast({ title: "Request received", description: "Our team will contact you within 24 hours." });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Please try again";
       toast({ title: "Could not submit", description: msg, variant: "destructive" });
@@ -139,24 +143,28 @@ const Quote = () => {
     }
   };
 
+  const resetAll = () => {
+    setChoice(null); setStep("choose"); setDone(false);
+    setBuyer({ full_name: "", phone: "", tin_number: "", email: "" });
+  };
+
+  // ---------- DONE ----------
   if (done) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navigation />
-        <PageHero eyebrow="Quote Request" title="Thank you!" subtitle="Your insurance request has been received." />
+        <PageHero eyebrow="Quote Request" title="Thank you!" subtitle="We've received your insurance request." />
         <main className="flex-1 container mx-auto px-4 py-16">
           <Card className="max-w-2xl mx-auto shadow-medium border-0">
             <CardContent className="p-10 text-center">
               <CheckCircle2 className="h-16 w-16 text-accent mx-auto mb-4" />
               <h2 className="text-2xl font-bold mb-2">We've got your request</h2>
               <p className="text-muted-foreground mb-6">
-                One of our brokers will reach out on <strong>{buyer.phone}</strong> within 24 hours
-                with a tailored quotation.
+                A broker from LF Insurance will reach out on <strong>{buyer.phone}</strong> within 24 hours
+                with your tailored quotation.
               </p>
               <div className="flex justify-center gap-3">
-                <Button onClick={() => { setDone(false); setBuyer({ full_name: "", phone: "", tin_number: "", email: "" }); }} variant="outline">
-                  Submit another request
-                </Button>
+                <Button onClick={resetAll} variant="outline">Submit another request</Button>
                 <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
                   <a href="/">Back to home</a>
                 </Button>
@@ -176,237 +184,310 @@ const Quote = () => {
       <PageHero
         eyebrow="Get a Quote"
         title="Request Your Insurance Quote"
-        subtitle="Fill in your details and our broker will respond within 24 hours with the best cover for you."
+        subtitle="Choose your cover, fill in the details and instantly see your recommended category."
       />
       <main className="flex-1 container mx-auto px-4 py-12">
-        <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <div className="lg:col-span-2">
+        <div className="max-w-4xl mx-auto">
+          {/* Stepper */}
+          <div className="flex items-center justify-center gap-2 mb-8 text-sm">
+            {["Choose", "Details", "Your Category"].map((label, i) => {
+              const active =
+                (step === "choose" && i === 0) ||
+                (step === "details" && i === 1) ||
+                (step === "result" && i === 2);
+              const done = (step === "details" && i === 0) || (step === "result" && i <= 1);
+              return (
+                <div key={label} className="flex items-center gap-2">
+                  <div className={`h-8 w-8 rounded-full grid place-items-center font-bold
+                    ${active ? "bg-accent text-accent-foreground" : done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                    {done ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
+                  </div>
+                  <span className={active ? "font-semibold text-primary" : "text-muted-foreground"}>{label}</span>
+                  {i < 2 && <span className="w-8 h-px bg-border mx-1" />}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* STEP 1: CHOOSE */}
+          {step === "choose" && (
+            <div className="grid md:grid-cols-2 gap-6">
+              {[
+                { key: "motor", icon: Car, title: "Motor Insurance", desc: "Insure your car, motorcycle or commercial vehicle." },
+                { key: "family", icon: Users, title: "Family Insurance", desc: "Medical cover for you, your spouse and your children." },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => { setChoice(opt.key as Choice); setStep("details"); }}
+                  className={`group text-left rounded-2xl border-2 p-8 transition-all hover:shadow-strong hover:-translate-y-1
+                    ${choice === opt.key ? "border-accent bg-accent/5" : "border-border bg-card"}`}
+                >
+                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary to-primary/70 grid place-items-center mb-4 group-hover:scale-110 transition-transform">
+                    <opt.icon className="h-7 w-7 text-primary-foreground" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-primary mb-1">{opt.title}</h3>
+                  <p className="text-muted-foreground">{opt.desc}</p>
+                  <div className="flex items-center gap-2 text-accent font-semibold mt-4">
+                    Start <ArrowRight className="h-4 w-4" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* STEP 2: DETAILS */}
+          {step === "details" && choice === "motor" && (
             <Card className="shadow-medium border-0">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
-                  <ShieldCheck className="h-6 w-6 text-accent" />
-                  Quotation Form
+                  <Car className="h-6 w-6 text-accent" /> Vehicle Details
                 </CardTitle>
-                <p className="text-sm text-muted-foreground">All fields marked * are required.</p>
+                <p className="text-sm text-muted-foreground">Tell us about your vehicle to see your category.</p>
               </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-8">
-                  {/* Buyer details */}
-                  <section className="space-y-4">
-                    <h3 className="text-lg font-bold text-primary border-b pb-2">Buyer Details</h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="full_name">Full Name *</Label>
-                        <Input id="full_name" required maxLength={120}
-                          value={buyer.full_name}
-                          onChange={(e) => setBuyer({ ...buyer, full_name: e.target.value })}
-                          placeholder="e.g. John Mwakasege" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Active Phone Number *</Label>
-                        <Input id="phone" required maxLength={30}
-                          value={buyer.phone}
-                          onChange={(e) => setBuyer({ ...buyer, phone: e.target.value })}
-                          placeholder="+255 7xx xxx xxx" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="tin">TIN Number *</Label>
-                        <Input id="tin" required maxLength={30}
-                          value={buyer.tin_number}
-                          onChange={(e) => setBuyer({ ...buyer, tin_number: e.target.value })}
-                          placeholder="123-456-789" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email (optional)</Label>
-                        <Input id="email" type="email" maxLength={160}
-                          value={buyer.email}
-                          onChange={(e) => setBuyer({ ...buyer, email: e.target.value })}
-                          placeholder="you@example.com" />
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Registration Number *</Label>
+                    <Input required value={motor.registration_number}
+                      onChange={(e) => setMotor({ ...motor, registration_number: e.target.value.toUpperCase() })}
+                      placeholder="T123 ABC" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Vehicle Use *</Label>
+                    <Select value={motor.use} onValueChange={(v) => setMotor({ ...motor, use: v as VehicleUse })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="private">Private Car</SelectItem>
+                        <SelectItem value="commercial">Commercial Vehicle</SelectItem>
+                        <SelectItem value="motorcycle">Motorcycle / Bodaboda</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cover Type *</Label>
+                    <Select value={motor.cover} onValueChange={(v) => setMotor({ ...motor, cover: v as CoverLevel })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="comprehensive">Comprehensive (full cover)</SelectItem>
+                        <SelectItem value="tpft">Third Party Fire & Theft</SelectItem>
+                        <SelectItem value="tpo">Third Party Only</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Make & Model</Label>
+                    <Input value={motor.make_model}
+                      onChange={(e) => setMotor({ ...motor, make_model: e.target.value })}
+                      placeholder="Toyota Hilux" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Year of Manufacture</Label>
+                    <Input inputMode="numeric" maxLength={4} value={motor.year}
+                      onChange={(e) => setMotor({ ...motor, year: e.target.value.replace(/\D/g, "") })}
+                      placeholder="2020" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Vehicle Value (TZS) {motor.cover === "comprehensive" && "*"}</Label>
+                    <Input inputMode="numeric" value={motor.sum_insured}
+                      onChange={(e) => setMotor({ ...motor, sum_insured: e.target.value.replace(/\D/g, "") })}
+                      placeholder="35000000" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Previous Claim History</Label>
+                    <Select value={motor.claim_history} onValueChange={(v) => setMotor({ ...motor, claim_history: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="No">No — claims free</SelectItem>
+                        <SelectItem value="Yes">Yes — with claim record</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Additional Notes</Label>
+                  <Textarea value={motor.notes} onChange={(e) => setMotor({ ...motor, notes: e.target.value })} />
+                </div>
+
+                <div className="flex justify-between pt-4">
+                  <Button variant="outline" onClick={() => setStep("choose")}>
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Back
+                  </Button>
+                  <Button
+                    className="bg-accent text-accent-foreground hover:bg-accent/90"
+                    disabled={!motor.registration_number || (motor.cover === "comprehensive" && !motor.sum_insured)}
+                    onClick={() => setStep("result")}
+                  >
+                    See my category <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {step === "details" && choice === "family" && (
+            <Card className="shadow-medium border-0">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <Users className="h-6 w-6 text-accent" /> Family Composition
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">Tell us about each family member to see the best plan.</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {family.members.map((m, i) => (
+                  <div key={i} className="grid md:grid-cols-[1fr,140px,40px] gap-3 items-end">
+                    <div className="space-y-2">
+                      <Label>Member</Label>
+                      <Input value={m.role} onChange={(e) => updateMember(i, { role: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Age</Label>
+                      <Input inputMode="numeric" value={String(m.age)}
+                        onChange={(e) => updateMember(i, { age: parseInt(e.target.value.replace(/\D/g, "") || "0", 10) })} />
+                    </div>
+                    <Button type="button" variant="ghost" size="icon"
+                      onClick={() => removeMember(i)} disabled={family.members.length <= 1}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" onClick={addKid}>
+                  + Add a child / dependant
+                </Button>
+
+                <div className="grid md:grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-2">
+                    <Label>Annual Budget (optional, TZS)</Label>
+                    <Input inputMode="numeric" value={family.budget}
+                      onChange={(e) => setFamily({ ...family, budget: e.target.value.replace(/\D/g, "") })}
+                      placeholder="e.g. 5,000,000" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Pre-existing conditions / preferences</Label>
+                    <Input value={family.notes} onChange={(e) => setFamily({ ...family, notes: e.target.value })}
+                      placeholder="Optional" />
+                  </div>
+                </div>
+
+                <p className="text-xs text-muted-foreground">
+                  Waiting periods apply: 12 months for pre-existing / chronic conditions and maternity; 3 months for non-emergency hospitalisation.
+                </p>
+
+                <div className="flex justify-between pt-4">
+                  <Button variant="outline" onClick={() => setStep("choose")}>
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Back
+                  </Button>
+                  <Button
+                    className="bg-accent text-accent-foreground hover:bg-accent/90"
+                    disabled={family.members.length === 0}
+                    onClick={() => setStep("result")}
+                  >
+                    See my category <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* STEP 3: RESULT */}
+          {step === "result" && (
+            <div className="space-y-6">
+              <Card className="shadow-strong border-0 overflow-hidden">
+                <div className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground p-8">
+                  <Badge className="bg-accent text-accent-foreground mb-3">Your Recommended Category</Badge>
+                  {choice === "motor" && motorResult && (
+                    <>
+                      <h2 className="text-3xl font-bold mb-2">{motorResult.category}</h2>
+                      <p className="text-primary-foreground/90">Indicative annual premium</p>
+                      <p className="text-4xl font-extrabold mt-1">{fmtTZS(motorResult.annualPremium)}</p>
+                    </>
+                  )}
+                  {choice === "family" && familyResult && (
+                    <>
+                      <h2 className="text-3xl font-bold mb-2">{familyResult.rec.plan}</h2>
+                      <p className="text-primary-foreground/90">{familyResult.rec.reasoning}</p>
+                      <p className="text-4xl font-extrabold mt-3">{fmtTZS(familyResult.rec.annualPremium)} <span className="text-base font-normal opacity-80">/ year</span></p>
+                    </>
+                  )}
+                </div>
+                <CardContent className="p-6">
+                  {choice === "motor" && motorResult && (
+                    <ul className="space-y-2 text-sm">
+                      {motorResult.notes.map((n, i) => (
+                        <li key={i} className="flex gap-2 text-muted-foreground">
+                          <CheckCircle2 className="h-4 w-4 text-accent mt-0.5 shrink-0" /> {n}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {choice === "family" && familyResult && (
+                    <div>
+                      <p className="text-sm font-semibold mb-3 text-primary">Compare all plans for your family:</p>
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {medicalPlans.map((p) => (
+                          <div key={p.key}
+                            className={`p-4 rounded-lg border-2 ${p.key === familyResult.rec.plan ? "border-accent bg-accent/5" : "border-border"}`}>
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-primary">{p.key}</span>
+                              {p.key === familyResult.rec.plan && <Badge className="bg-accent text-accent-foreground">Recommended</Badge>}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">Limit {p.limit} · {p.region}</p>
+                            <p className="text-lg font-bold mt-2">{fmtTZS(familyResult.all[p.key])} <span className="text-xs font-normal text-muted-foreground">/ year</span></p>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </section>
+                  )}
+                </CardContent>
+              </Card>
 
-                  {/* Type tabs */}
-                  <section className="space-y-4">
-                    <h3 className="text-lg font-bold text-primary border-b pb-2">Insurance Type</h3>
-                    <Tabs value={tab} onValueChange={(v) => setTab(v as InsuranceTab)}>
-                      <TabsList className="grid grid-cols-3 w-full">
-                        <TabsTrigger value="motor">Motor</TabsTrigger>
-                        <TabsTrigger value="medical">Medical</TabsTrigger>
-                        <TabsTrigger value="other">Other</TabsTrigger>
-                      </TabsList>
+              {/* Buyer details */}
+              <Card className="shadow-medium border-0">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <ShieldCheck className="h-5 w-5 text-accent" /> Confirm Your Details
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">Our broker will reach out within 24 hours to confirm and finalise.</p>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Full Name *</Label>
+                        <Input required value={buyer.full_name}
+                          onChange={(e) => setBuyer({ ...buyer, full_name: e.target.value })} placeholder="e.g. John Mwakasege" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Active Phone Number *</Label>
+                        <Input required value={buyer.phone}
+                          onChange={(e) => setBuyer({ ...buyer, phone: e.target.value })} placeholder="+255 7xx xxx xxx" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>TIN Number *</Label>
+                        <Input required value={buyer.tin_number}
+                          onChange={(e) => setBuyer({ ...buyer, tin_number: e.target.value })} placeholder="123-456-789" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email (optional)</Label>
+                        <Input type="email" value={buyer.email}
+                          onChange={(e) => setBuyer({ ...buyer, email: e.target.value })} placeholder="you@example.com" />
+                      </div>
+                    </div>
 
-                      {/* MOTOR */}
-                      <TabsContent value="motor" className="space-y-4 pt-4">
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="reg">Registration Number *</Label>
-                            <Input id="reg" required value={motor.registration_number}
-                              onChange={(e) => setMotor({ ...motor, registration_number: e.target.value.toUpperCase() })}
-                              placeholder="T123 ABC" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Type of Cover *</Label>
-                            <Select value={motor.cover_type} onValueChange={(v) => setMotor({ ...motor, cover_type: v })}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {motorCoverTypes.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="mm">Make & Model</Label>
-                            <Input id="mm" value={motor.vehicle_make_model}
-                              onChange={(e) => setMotor({ ...motor, vehicle_make_model: e.target.value })}
-                              placeholder="Toyota Hilux" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="yr">Year of Manufacture</Label>
-                            <Input id="yr" inputMode="numeric" maxLength={4} value={motor.year_of_manufacture}
-                              onChange={(e) => setMotor({ ...motor, year_of_manufacture: e.target.value.replace(/\D/g, "") })}
-                              placeholder="2020" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="sum">Vehicle Value / Sum Insured (TZS)</Label>
-                            <Input id="sum" inputMode="numeric" value={motor.sum_insured}
-                              onChange={(e) => setMotor({ ...motor, sum_insured: e.target.value })}
-                              placeholder="35,000,000" />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Previous Claim History</Label>
-                            <Select value={motor.has_claim_history} onValueChange={(v) => setMotor({ ...motor, has_claim_history: v })}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="No">No — claims free</SelectItem>
-                                <SelectItem value="Yes">Yes — with claim record</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="mn">Additional Notes</Label>
-                          <Textarea id="mn" value={motor.notes}
-                            onChange={(e) => setMotor({ ...motor, notes: e.target.value })}
-                            placeholder="Anything else we should know..." />
-                        </div>
-                      </TabsContent>
-
-                      {/* MEDICAL */}
-                      <TabsContent value="medical" className="space-y-4 pt-4">
-                        <div className="space-y-2">
-                          <Label>Choose a Plan *</Label>
-                          <Select value={plan} onValueChange={setPlan}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {medicalPlans.map((p) => (
-                                <SelectItem key={p.key} value={p.key}>
-                                  {p.key} — annual limit {p.limit} ({p.region})
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div>
-                          <Label className="mb-2 block">Number of Lives per Age Band *</Label>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {ageBands.map((b) => (
-                              <div key={b} className="space-y-1">
-                                <Label htmlFor={`band-${b}`} className="text-xs text-muted-foreground">
-                                  Age {b} · {fmt(premiumRates[b][plan])}/yr
-                                </Label>
-                                <Input
-                                  id={`band-${b}`}
-                                  inputMode="numeric"
-                                  value={lives[b]}
-                                  onChange={(e) => setLives({ ...lives, [b]: e.target.value.replace(/\D/g, "") })}
-                                  placeholder="0"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="rounded-lg border bg-secondary/40 p-4 flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Estimated annual premium</p>
-                            <p className="text-2xl font-bold text-primary">{fmt(estimatedPremium)}</p>
-                          </div>
-                          <Badge variant="secondary" className="text-primary font-semibold">{plan}</Badge>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="mednotes">Additional Notes</Label>
-                          <Textarea id="mednotes" value={medicalNotes} onChange={(e) => setMedicalNotes(e.target.value)}
-                            placeholder="Pre-existing conditions, preferred hospitals, etc." />
-                        </div>
-
-                        <p className="text-xs text-muted-foreground">
-                          Waiting periods apply: 12 months for pre-existing / chronic conditions, maternity and foreign treatment; 3 months for non-emergency hospitalisation.
-                        </p>
-                      </TabsContent>
-
-                      {/* OTHER */}
-                      <TabsContent value="other" className="space-y-4 pt-4">
-                        <div className="grid md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Insurance Type *</Label>
-                            <Select value={other.insurance_type} onValueChange={(v) => setOther({ ...other, insurance_type: v })}>
-                              <SelectTrigger><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {otherInsuranceTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <Label htmlFor="osum">Sum Insured (TZS)</Label>
-                            <Input id="osum" value={other.sum_insured}
-                              onChange={(e) => setOther({ ...other, sum_insured: e.target.value })}
-                              placeholder="e.g. 100,000,000" />
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="odesc">Describe what you'd like to insure *</Label>
-                          <Textarea id="odesc" required value={other.description}
-                            onChange={(e) => setOther({ ...other, description: e.target.value })}
-                            placeholder="Type of asset, location, value, duration of cover, etc." />
-                        </div>
-                      </TabsContent>
-                    </Tabs>
-                  </section>
-
-                  <Button type="submit" size="lg" disabled={submitting}
-                    className="w-full bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                    {submitting ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Submitting...</> : <><Send className="h-5 w-5 mr-2" /> Submit Request</>}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Sidebar */}
-          <aside className="space-y-4">
-            <Card className="border-0 shadow-soft bg-gradient-to-br from-primary/5 to-accent/5">
-              <CardContent className="p-6">
-                <h4 className="font-bold text-primary mb-2">Why choose LF Insurance Brokers?</h4>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent mt-0.5" /> Licensed TIRA broker in Tanzania</li>
-                  <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent mt-0.5" /> Access to all major insurers</li>
-                  <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent mt-0.5" /> Hands-on claims support</li>
-                  <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-accent mt-0.5" /> Response within 24 hours</li>
-                </ul>
-              </CardContent>
-            </Card>
-            <Card className="border-0 shadow-soft">
-              <CardContent className="p-6 text-sm">
-                <p className="font-bold text-foreground mb-1">Need help filling this in?</p>
-                <p className="text-muted-foreground mb-3">Call our team directly — we'll guide you through it.</p>
-                <Button asChild variant="outline" className="w-full">
-                  <a href="tel:+255713464894">+255 713 464 894</a>
-                </Button>
-              </CardContent>
-            </Card>
-          </aside>
+                    <div className="flex justify-between pt-4">
+                      <Button type="button" variant="outline" onClick={() => setStep("details")}>
+                        <ArrowLeft className="h-4 w-4 mr-2" /> Edit details
+                      </Button>
+                      <Button type="submit" size="lg" disabled={submitting}
+                        className="bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
+                        {submitting ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> Submitting...</> : <><Send className="h-5 w-5 mr-2" /> Submit Request</>}
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </main>
       <Footer />
