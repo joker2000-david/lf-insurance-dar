@@ -116,7 +116,7 @@ const Quote = () => {
         phone: buyer.phone.trim(),
         tin_number: buyer.tin_number.trim(),
         email: buyer.email?.trim() || null,
-        details,
+        details: details as never,
       });
       if (error) throw error;
 
