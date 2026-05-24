@@ -15,6 +15,7 @@ const Navigation = () => {
     { name: "Blog", to: "/blog" },
     { name: "FAQ", to: "/faq" },
     { name: "Contact", to: "/contact" },
+    { name: "Get a Quote", to: "/quote" },
   ];
 
   return (
@@ -63,7 +64,7 @@ const Navigation = () => {
 
             <div className="flex items-center gap-3">
               <Button asChild className="hidden md:inline-flex bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                <Link to="/contact">Get a Quote <ArrowRight className="ml-1 h-4 w-4" /></Link>
+                <Link to="/quote">Get a Quote <ArrowRight className="ml-1 h-4 w-4" /></Link>
               </Button>
               <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)} className="lg:hidden">
                 {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -85,7 +86,7 @@ const Navigation = () => {
                   </Link>
                 ))}
                 <Button asChild className="mt-3 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                  <Link to="/contact" onClick={() => setIsOpen(false)}>Get a Quote</Link>
+                  <Link to="/quote" onClick={() => setIsOpen(false)}>Get a Quote</Link>
                 </Button>
               </div>
             </div>
