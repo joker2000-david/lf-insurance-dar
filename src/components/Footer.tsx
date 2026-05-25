@@ -28,7 +28,7 @@ const Footer = () => {
     ],
     "Quick Links": [
       { label: "About Us", href: "/about" },
-      { label: "Get Quote", href: "/contact" },
+      { label: "Get Quote", href: "https://wa.me/message/KVLRH3PCPJBGI1" },
       { label: "Contact Us", href: "/contact" },
       { label: "FAQs", href: "/faq" },
       { label: "Blog", href: "/blog" },

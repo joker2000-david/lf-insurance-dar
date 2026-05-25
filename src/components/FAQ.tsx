@@ -88,12 +88,14 @@ const FAQ = () => {
               Get in touch and we'll get back to you as soon as possible.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="gradient-primary text-white font-semibold">
-                <MessageCircle className="h-5 w-5 mr-2" />
-                Start Live Chat
+              <Button asChild size="lg" className="gradient-primary text-white font-semibold">
+                <a href="https://wa.me/message/KVLRH3PCPJBGI1" target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="h-5 w-5 mr-2" />
+                  Chat on WhatsApp
+                </a>
               </Button>
-              <Button size="lg" variant="outline" className="font-semibold">
-                Call +255 123 456 789
+              <Button asChild size="lg" variant="outline" className="font-semibold">
+                <a href="tel:+255713464894">Call +255 713 464 894</a>
               </Button>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Phone, Mail, ArrowRight } from "lucide-react";
 import logo from "@/assets/lf-logo.jpeg";
+import { WHATSAPP_URL } from "@/lib/whatsapp";
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -64,7 +65,7 @@ const Navigation = () => {
 
             <div className="flex items-center gap-3">
               <Button asChild className="hidden md:inline-flex bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                <Link to="/quote">Get a Quote <ArrowRight className="ml-1 h-4 w-4" /></Link>
+                <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">Get a Quote <ArrowRight className="ml-1 h-4 w-4" /></a>
               </Button>
               <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)} className="lg:hidden">
                 {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -86,7 +87,7 @@ const Navigation = () => {
                   </Link>
                 ))}
                 <Button asChild className="mt-3 bg-accent text-accent-foreground hover:bg-accent/90 font-semibold">
-                  <Link to="/quote" onClick={() => setIsOpen(false)}>Get a Quote</Link>
+                  <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" onClick={() => setIsOpen(false)}>Get a Quote</a>
                 </Button>
               </div>
             </div>

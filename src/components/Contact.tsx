@@ -86,8 +86,8 @@ const Contact = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Our customer service team is available 24/7 for claims and emergencies.
                 </p>
-                <Button size="sm" className="gradient-primary text-white">
-                  Start Live Chat
+                <Button asChild size="sm" className="gradient-primary text-white">
+                  <a href="https://wa.me/message/KVLRH3PCPJBGI1" target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a>
                 </Button>
               </CardContent>
             </Card>
@@ -190,9 +190,11 @@ const Contact = () => {
                   </label>
                 </div>
 
-                <Button size="lg" className="w-full md:w-auto gradient-primary text-white font-semibold">
-                  <Send className="h-5 w-5 mr-2" />
-                  Send Message
+                <Button asChild size="lg" className="w-full md:w-auto gradient-primary text-white font-semibold">
+                  <a href="https://wa.me/message/KVLRH3PCPJBGI1" target="_blank" rel="noopener noreferrer">
+                    <Send className="h-5 w-5 mr-2" />
+                    Send via WhatsApp
+                  </a>
                 </Button>
               </CardContent>
             </Card>

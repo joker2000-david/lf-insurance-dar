@@ -84,12 +84,14 @@ const About = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="gradient-primary text-white font-semibold">
-                Contact Us Today
-                <ArrowRight className="ml-2 h-5 w-5" />
+              <Button asChild size="lg" className="gradient-primary text-white font-semibold">
+                <a href="https://wa.me/message/KVLRH3PCPJBGI1" target="_blank" rel="noopener noreferrer">
+                  Contact Us Today
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </a>
               </Button>
-              <Button size="lg" variant="outline" className="font-semibold">
-                Download Brochure
+              <Button asChild size="lg" variant="outline" className="font-semibold">
+                <a href="https://wa.me/message/KVLRH3PCPJBGI1" target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a>
               </Button>
             </div>
           </div>

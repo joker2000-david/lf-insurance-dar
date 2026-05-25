@@ -5,6 +5,7 @@ import heroImage from "@/assets/hero-image.jpg";
 import testimonial1 from "@/assets/testimonial-1.jpg";
 import testimonial2 from "@/assets/testimonial-2.jpg";
 import testimonial3 from "@/assets/testimonial-3.jpg";
+import { WHATSAPP_URL } from "@/lib/whatsapp";
 
 const Hero = () => {
   return (
@@ -45,7 +46,7 @@ const Hero = () => {
 
             <div className="flex flex-col sm:flex-row gap-4 mb-10">
               <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold shadow-gold">
-                <Link to="/contact">Get Free Quote <ArrowRight className="ml-2 h-5 w-5" /></Link>
+                <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">Get Free Quote <ArrowRight className="ml-2 h-5 w-5" /></a>
               </Button>
               <Button asChild size="lg" variant="outline" className="bg-transparent border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground hover:text-primary font-semibold">
                 <Link to="/services">Explore Services</Link>
@@ -84,7 +85,7 @@ const Hero = () => {
                 <h3 className="text-2xl font-bold text-primary mb-1">Quick Quote Request</h3>
                 <p className="text-sm text-muted-foreground mb-6">Get a tailored quote in under 24 hours.</p>
 
-                <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
+                <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); window.open(WHATSAPP_URL, "_blank", "noopener,noreferrer"); }}>
                   <input type="text" placeholder="Full Name" className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary text-foreground" />
                   <input type="tel" placeholder="Phone Number (+255...)" className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary text-foreground" />
                   <input type="email" placeholder="Email Address" className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary text-foreground" />
@@ -99,8 +100,8 @@ const Hero = () => {
                     <option>Engineering Insurance</option>
                     <option>Personal Accident</option>
                   </select>
-                  <Button className="w-full bg-primary hover:bg-primary-dark text-primary-foreground font-bold h-12">
-                    Get Free Quote <ArrowRight className="ml-2 h-4 w-4" />
+                  <Button type="submit" className="w-full bg-primary hover:bg-primary-dark text-primary-foreground font-bold h-12">
+                    Get Free Quote on WhatsApp <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </form>
 
