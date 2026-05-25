@@ -12,11 +12,11 @@ const Navigation = () => {
   const navItems = [
     { name: "Home", to: "/" },
     { name: "Services", to: "/services" },
+    { name: "Calculator", to: "/calculator" },
     { name: "About", to: "/about" },
     { name: "Blog", to: "/blog" },
     { name: "FAQ", to: "/faq" },
     { name: "Contact", to: "/contact" },
-    { name: "Get a Quote", to: "/quote" },
   ];
 
   return (
