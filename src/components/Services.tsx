@@ -76,7 +76,7 @@ const Services = () => {
               <p className="text-sm text-primary-foreground/80">Talk to a broker today — free, no obligation.</p>
             </div>
             <Button asChild size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold">
-              <Link to="/contact">Get Personalized Quote <ArrowRight className="ml-2 h-5 w-5" /></Link>
+              <a href="https://wa.me/message/KVLRH3PCPJBGI1" target="_blank" rel="noopener noreferrer">Get Personalized Quote <ArrowRight className="ml-2 h-5 w-5" /></a>
             </Button>
           </div>
         </div>

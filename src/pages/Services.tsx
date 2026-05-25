@@ -55,7 +55,7 @@ const ServicesPage = () => {
                   </div>
 
                   <Button asChild className="bg-primary hover:bg-primary-dark text-primary-foreground font-semibold">
-                    <Link to="/contact">Request a Quote <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                    <a href="https://wa.me/message/KVLRH3PCPJBGI1" target="_blank" rel="noopener noreferrer">Request a Quote <ArrowRight className="ml-2 h-4 w-4" /></a>
                   </Button>
                 </div>
               </div>
