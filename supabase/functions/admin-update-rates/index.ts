@@ -73,6 +73,15 @@ If a value is unchanged, OMIT it. Never invent numbers. Convert percentages (4%)
 CURRENT CONFIG (for reference, do not echo):
 ${JSON.stringify(current)}`;
 
+    const userContent: any[] = [{ type: "text", text: prompt }];
+    if (Array.isArray(images)) {
+      for (const url of images.slice(0, 5)) {
+        if (typeof url === "string" && url.startsWith("data:image/")) {
+          userContent.push({ type: "image_url", image_url: { url } });
+        }
+      }
+    }
+
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -83,7 +92,7 @@ ${JSON.stringify(current)}`;
         model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: prompt },
+          { role: "user", content: userContent },
         ],
         tools: [{
           type: "function",
