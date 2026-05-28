@@ -12,6 +12,7 @@ import ContactPage from "./pages/Contact";
 import FAQPage from "./pages/FAQ";
 import QuotePage from "./pages/Quote";
 import CalculatorPage from "./pages/Calculator";
+import AdminPage from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
