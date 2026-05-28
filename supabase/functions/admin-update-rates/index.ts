@@ -27,8 +27,8 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { passcode, action, prompt, data } = body as {
-      passcode?: string; action?: string; prompt?: string; data?: unknown;
+    const { passcode, action, prompt, data, images } = body as {
+      passcode?: string; action?: string; prompt?: string; data?: unknown; images?: string[];
     };
 
     if (!passcode || passcode !== ADMIN_PASSCODE) {
