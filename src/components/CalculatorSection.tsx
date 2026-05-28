@@ -7,32 +7,81 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Calculator as CalcIcon, Car, Heart, Plus, Trash2, MessageCircle, Sparkles } from "lucide-react";
-import {
-  recommendMotorCategory, computeFamilyPremiums, recommendFamilyCategory,
-  medicalPlans, ageBands, premiumRates,
-  type VehicleUse, type CoverLevel, type FamilyMember,
-} from "@/data/medical-plans";
 import { WHATSAPP_URL } from "@/lib/whatsapp";
+import { useCalculatorConfig, type CalculatorConfig } from "@/hooks/useCalculatorConfig";
+
+type VehicleUse = "private" | "commercial" | "motorcycle";
+type CoverLevel = "comprehensive" | "tpft" | "tpo";
+interface FamilyMember { role: string; age: number }
 
 const fmtTZS = (n: number) => "TZS " + Math.round(n).toLocaleString("en-US");
 
-const MotorCalculator = () => {
+function ageToBand(age: number, bands: string[]) {
+  for (const b of bands) {
+    const [lo, hi] = b.split("-").map(Number);
+    if (age >= lo && age <= (hi || 200)) return b;
+  }
+  return bands[bands.length - 1];
+}
+
+function recommendMotorCategory(cfg: CalculatorConfig, use: VehicleUse, cover: CoverLevel, sumInsured: number, year?: number) {
+  const notes: string[] = [];
+  let category = "", premium = 0;
+  const useLabel = use === "private" ? "Private Car" : use === "commercial" ? "Commercial Vehicle" : "Motorcycle / Bodaboda";
+
+  if (cover === "comprehensive") {
+    const c = cfg.motorRates.comprehensive[use];
+    premium = Math.max(Math.round(sumInsured * c.rate), c.minPremium);
+    const age = year ? new Date().getFullYear() - year : 0;
+    if (age >= 10) { premium = Math.round(premium * 1.1); notes.push("10% loading applied for vehicles older than 10 years."); }
+    category = `Comprehensive — ${useLabel}`;
+  } else if (cover === "tpft") {
+    premium = cfg.motorRates.tpft[use]; category = `Third Party Fire & Theft — ${useLabel}`;
+  } else {
+    premium = cfg.motorRates.tpo[use]; category = `Third Party Only — ${useLabel}`;
+  }
+  notes.push("Indicative only. Final premium confirmed by underwriter.");
+  return { category, annualPremium: premium, notes };
+}
+
+function computeFamilyPremiums(cfg: CalculatorConfig, members: FamilyMember[]) {
+  const result: Record<string, number> = {};
+  for (const plan of cfg.medicalPlans) {
+    result[plan.key] = members.reduce((sum, m) => {
+      const band = ageToBand(m.age, cfg.ageBands);
+      return sum + (cfg.premiumRates[band]?.[plan.key] ?? 0);
+    }, 0);
+  }
+  return result;
+}
+
+function recommendFamilyCategory(cfg: CalculatorConfig, members: FamilyMember[], budgetTzs?: number) {
+  const totals = computeFamilyPremiums(cfg, members);
+  if (budgetTzs && budgetTzs > 0) {
+    for (const p of [...cfg.medicalPlans].reverse()) {
+      if (totals[p.key] <= budgetTzs)
+        return { plan: p.key, annualPremium: totals[p.key], reasoning: `Best plan fitting budget of TZS ${budgetTzs.toLocaleString()}.` };
+    }
+    const first = cfg.medicalPlans[0];
+    return { plan: first.key, annualPremium: totals[first.key], reasoning: "Budget below smallest premium. Showing the most affordable plan." };
+  }
+  const size = members.length;
+  const idx = size <= 2 ? 1 : size <= 4 ? 2 : 3;
+  const plan = cfg.medicalPlans[Math.min(idx, cfg.medicalPlans.length - 1)];
+  return { plan: plan.key, annualPremium: totals[plan.key], reasoning: `Recommended for a family of ${size}.` };
+}
+
+const MotorCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
   const [use, setUse] = useState<VehicleUse>("private");
   const [cover, setCover] = useState<CoverLevel>("comprehensive");
   const [sumInsured, setSumInsured] = useState<number>(25_000_000);
   const [year, setYear] = useState<number>(new Date().getFullYear() - 3);
-
-  const result = useMemo(
-    () => recommendMotorCategory(use, cover, sumInsured, year),
-    [use, cover, sumInsured, year]
-  );
+  const result = useMemo(() => recommendMotorCategory(cfg, use, cover, sumInsured, year), [cfg, use, cover, sumInsured, year]);
 
   return (
     <div className="grid lg:grid-cols-5 gap-6">
       <Card className="lg:col-span-3 shadow-lg border-accent/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Car className="h-5 w-5 text-accent" /> Vehicle Details</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Car className="h-5 w-5 text-accent" /> Vehicle Details</CardTitle></CardHeader>
         <CardContent className="space-y-5">
           <div className="grid md:grid-cols-2 gap-4">
             <div>
@@ -59,35 +108,27 @@ const MotorCalculator = () => {
             </div>
             <div>
               <Label>Vehicle Value (TZS)</Label>
-              <Input type="number" min={0} step={500000} value={sumInsured}
-                onChange={(e) => setSumInsured(Number(e.target.value) || 0)} />
+              <Input type="number" min={0} step={500000} value={sumInsured} onChange={(e) => setSumInsured(Number(e.target.value) || 0)} />
             </div>
             <div>
               <Label>Year of Manufacture</Label>
-              <Input type="number" min={1980} max={new Date().getFullYear()} value={year}
-                onChange={(e) => setYear(Number(e.target.value) || new Date().getFullYear())} />
+              <Input type="number" min={1980} max={new Date().getFullYear()} value={year} onChange={(e) => setYear(Number(e.target.value) || new Date().getFullYear())} />
             </div>
           </div>
         </CardContent>
       </Card>
 
       <Card className="lg:col-span-2 shadow-xl border-accent bg-gradient-to-br from-primary to-primary-light text-primary-foreground">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Your Estimate</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Your Estimate</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <Badge className="bg-accent text-accent-foreground">{result.category}</Badge>
           <div>
             <p className="text-sm opacity-80">Estimated Annual Premium</p>
             <p className="text-3xl font-bold text-accent">{fmtTZS(result.annualPremium)}</p>
           </div>
-          <ul className="text-xs space-y-1 opacity-85">
-            {result.notes.map((n, i) => <li key={i}>• {n}</li>)}
-          </ul>
+          <ul className="text-xs space-y-1 opacity-85">{result.notes.map((n, i) => <li key={i}>• {n}</li>)}</ul>
           <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-            <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-              <MessageCircle className="h-4 w-4" /> Confirm via WhatsApp
-            </Button>
+            <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90"><MessageCircle className="h-4 w-4" /> Confirm via WhatsApp</Button>
           </a>
         </CardContent>
       </Card>
@@ -95,61 +136,36 @@ const MotorCalculator = () => {
   );
 };
 
-const FamilyCalculator = () => {
-  const [members, setMembers] = useState<FamilyMember[]>([
-    { role: "Self", age: 35 },
-    { role: "Spouse", age: 32 },
-  ]);
+const FamilyCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
+  const [members, setMembers] = useState<FamilyMember[]>([{ role: "Self", age: 35 }, { role: "Spouse", age: 32 }]);
   const [budget, setBudget] = useState<number>(0);
-
-  const totals = useMemo(() => computeFamilyPremiums(members), [members]);
-  const recommended = useMemo(() => recommendFamilyCategory(members, budget || undefined), [members, budget]);
-
-  const update = (i: number, patch: Partial<FamilyMember>) =>
-    setMembers((arr) => arr.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
+  const totals = useMemo(() => computeFamilyPremiums(cfg, members), [cfg, members]);
+  const recommended = useMemo(() => recommendFamilyCategory(cfg, members, budget || undefined), [cfg, members, budget]);
+  const update = (i: number, patch: Partial<FamilyMember>) => setMembers((arr) => arr.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
   const remove = (i: number) => setMembers((arr) => arr.filter((_, idx) => idx !== i));
   const add = () => setMembers((arr) => [...arr, { role: "Child", age: 5 }]);
 
   return (
     <div className="grid lg:grid-cols-5 gap-6">
       <Card className="lg:col-span-3 shadow-lg border-accent/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5 text-accent" /> Family Members</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5 text-accent" /> Family Members</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           {members.map((m, i) => (
             <div key={i} className="grid grid-cols-12 gap-2 items-end">
-              <div className="col-span-5">
-                <Label className="text-xs">Role</Label>
-                <Input value={m.role} onChange={(e) => update(i, { role: e.target.value })} />
-              </div>
-              <div className="col-span-5">
-                <Label className="text-xs">Age</Label>
-                <Input type="number" min={0} max={59} value={m.age}
-                  onChange={(e) => update(i, { age: Number(e.target.value) || 0 })} />
-              </div>
-              <div className="col-span-2">
-                <Button variant="outline" size="icon" onClick={() => remove(i)} disabled={members.length <= 1}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+              <div className="col-span-5"><Label className="text-xs">Role</Label><Input value={m.role} onChange={(e) => update(i, { role: e.target.value })} /></div>
+              <div className="col-span-5"><Label className="text-xs">Age</Label><Input type="number" min={0} max={59} value={m.age} onChange={(e) => update(i, { age: Number(e.target.value) || 0 })} /></div>
+              <div className="col-span-2"><Button variant="outline" size="icon" onClick={() => remove(i)} disabled={members.length <= 1}><Trash2 className="h-4 w-4" /></Button></div>
             </div>
           ))}
-          <Button variant="outline" onClick={add} className="w-full">
-            <Plus className="h-4 w-4" /> Add Family Member
-          </Button>
-
+          <Button variant="outline" onClick={add} className="w-full"><Plus className="h-4 w-4" /> Add Family Member</Button>
           <div className="pt-4 border-t">
             <Label>Annual Budget (TZS) — optional</Label>
-            <Input type="number" min={0} step={100000} value={budget}
-              onChange={(e) => setBudget(Number(e.target.value) || 0)}
-              placeholder="e.g. 5,000,000" />
+            <Input type="number" min={0} step={100000} value={budget} onChange={(e) => setBudget(Number(e.target.value) || 0)} placeholder="e.g. 5,000,000" />
           </div>
-
           <div className="pt-4 border-t">
             <p className="text-sm font-semibold mb-2">All Plan Totals (annual)</p>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              {medicalPlans.map((p) => (
+              {cfg.medicalPlans.map((p) => (
                 <div key={p.key} className="flex justify-between p-2 rounded bg-muted/50">
                   <span className="font-medium">{p.key}</span>
                   <span className="text-accent font-semibold">{fmtTZS(totals[p.key])}</span>
@@ -161,9 +177,7 @@ const FamilyCalculator = () => {
       </Card>
 
       <Card className="lg:col-span-2 shadow-xl border-accent bg-gradient-to-br from-primary to-primary-light text-primary-foreground h-fit">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Recommended Plan</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Recommended Plan</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <Badge className="bg-accent text-accent-foreground">{recommended.plan}</Badge>
           <div>
@@ -172,13 +186,11 @@ const FamilyCalculator = () => {
           </div>
           <p className="text-sm opacity-90">{recommended.reasoning}</p>
           <div className="text-xs opacity-80 space-y-1">
-            <p>Coverage limit: {medicalPlans.find((p) => p.key === recommended.plan)?.limit}</p>
-            <p>Region: {medicalPlans.find((p) => p.key === recommended.plan)?.region}</p>
+            <p>Coverage limit: {cfg.medicalPlans.find((p) => p.key === recommended.plan)?.limit}</p>
+            <p>Region: {cfg.medicalPlans.find((p) => p.key === recommended.plan)?.region}</p>
           </div>
           <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-            <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-              <MessageCircle className="h-4 w-4" /> Confirm via WhatsApp
-            </Button>
+            <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90"><MessageCircle className="h-4 w-4" /> Confirm via WhatsApp</Button>
           </a>
         </CardContent>
       </Card>
@@ -186,25 +198,23 @@ const FamilyCalculator = () => {
   );
 };
 
-const RateTable = () => (
+const RateTable = ({ cfg }: { cfg: CalculatorConfig }) => (
   <Card className="mt-10 shadow-md">
-    <CardHeader>
-      <CardTitle>Strategis Medical Plans — Annual Rates per Member (TZS)</CardTitle>
-    </CardHeader>
+    <CardHeader><CardTitle>Medical Plans — Annual Rates per Member (TZS)</CardTitle></CardHeader>
     <CardContent className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-muted/50">
             <th className="p-2 text-left">Age Band</th>
-            {medicalPlans.map((p) => <th key={p.key} className="p-2 text-right">{p.key}</th>)}
+            {cfg.medicalPlans.map((p) => <th key={p.key} className="p-2 text-right">{p.key}</th>)}
           </tr>
         </thead>
         <tbody>
-          {ageBands.map((band) => (
+          {cfg.ageBands.map((band) => (
             <tr key={band} className="border-b hover:bg-muted/30">
               <td className="p-2 font-medium">{band}</td>
-              {medicalPlans.map((p) => (
-                <td key={p.key} className="p-2 text-right">{premiumRates[band][p.key].toLocaleString()}</td>
+              {cfg.medicalPlans.map((p) => (
+                <td key={p.key} className="p-2 text-right">{(cfg.premiumRates[band]?.[p.key] ?? 0).toLocaleString()}</td>
               ))}
             </tr>
           ))}
@@ -215,28 +225,27 @@ const RateTable = () => (
 );
 
 const CalculatorSection = () => {
+  const { config } = useCalculatorConfig();
   return (
     <section className="py-16 bg-muted/30">
       <div className="container mx-auto px-4 max-w-6xl">
         <div className="text-center mb-10">
           <h2 className="text-3xl md:text-4xl font-bold text-primary mb-4">Insurance Calculator</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Get an instant indicative premium for motor or family medical cover — based on Strategis 2025/2026 rates and TIRA-aligned motor tariffs.
+            Get an instant indicative premium for motor or family medical cover.
           </p>
         </div>
-
         <Tabs defaultValue="motor" className="w-full">
           <TabsList className="grid w-full md:w-96 mx-auto grid-cols-2 mb-8">
             <TabsTrigger value="motor"><Car className="h-4 w-4 mr-2" /> Motor</TabsTrigger>
             <TabsTrigger value="family"><Heart className="h-4 w-4 mr-2" /> Family Medical</TabsTrigger>
           </TabsList>
-          <TabsContent value="motor"><MotorCalculator /></TabsContent>
+          <TabsContent value="motor"><MotorCalculator cfg={config} /></TabsContent>
           <TabsContent value="family">
-            <FamilyCalculator />
-            <RateTable />
+            <FamilyCalculator cfg={config} />
+            <RateTable cfg={config} />
           </TabsContent>
         </Tabs>
-
         <div className="mt-12 text-center text-sm text-muted-foreground max-w-2xl mx-auto">
           <CalcIcon className="h-5 w-5 mx-auto mb-2 text-accent" />
           Estimates are indicative. Final premiums are confirmed by the underwriter after document review.
