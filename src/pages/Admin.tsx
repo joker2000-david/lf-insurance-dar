@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Send, Paperclip, X, Sparkles, RefreshCw, LogOut } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Lock, Send, Paperclip, X, Sparkles, RefreshCw, LogOut, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import RatesDashboard from "@/components/admin/RatesDashboard";
 
 const STORAGE_KEY = "lf_admin_passcode";
 
@@ -151,91 +153,105 @@ const AdminPage = () => {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Chat to update rates</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="h-80 overflow-y-auto rounded-md border bg-background p-3 space-y-3">
-                  {messages.length === 0 && (
-                    <div className="text-sm text-muted-foreground space-y-2">
-                      <p>Examples:</p>
-                      <ul className="list-disc ml-5 space-y-1">
-                        <li>"Set AFYA SUPA rate for 25-39 to 1,500,000"</li>
-                        <li>"Change comprehensive private car rate to 4.5% with minimum 400,000"</li>
-                        <li>"Set TPO motorcycle to 90,000"</li>
-                        <li>Attach a rate sheet image — the AI will read it.</li>
-                      </ul>
+          <Tabs defaultValue="dashboard" className="w-full">
+            <TabsList>
+              <TabsTrigger value="dashboard"><LayoutDashboard className="h-4 w-4 mr-1" /> Dashboard</TabsTrigger>
+              <TabsTrigger value="chat"><Sparkles className="h-4 w-4 mr-1" /> AI Chat</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="dashboard" className="mt-4">
+              <RatesDashboard passcode={passcode} onSaved={loadConfig} />
+            </TabsContent>
+
+            <TabsContent value="chat" className="mt-4">
+              <div className="grid lg:grid-cols-3 gap-6">
+                <Card className="lg:col-span-2 shadow-lg">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Chat to update rates</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="h-80 overflow-y-auto rounded-md border bg-background p-3 space-y-3">
+                      {messages.length === 0 && (
+                        <div className="text-sm text-muted-foreground space-y-2">
+                          <p>Examples:</p>
+                          <ul className="list-disc ml-5 space-y-1">
+                            <li>"Set AFYA SUPA rate for 25-39 to 1,500,000"</li>
+                            <li>"Change comprehensive private car rate to 4.5% with minimum 400,000"</li>
+                            <li>"Set TPO motorcycle to 90,000"</li>
+                            <li>Attach a rate sheet image — the AI will read it.</li>
+                          </ul>
+                        </div>
+                      )}
+                      {messages.map((m, i) => (
+                        <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
+                            m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                          }`}>{m.content}</div>
+                        </div>
+                      ))}
+                      {busy && <div className="text-sm text-muted-foreground">AI is parsing & updating…</div>}
                     </div>
-                  )}
-                  {messages.map((m, i) => (
-                    <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm whitespace-pre-wrap ${
-                        m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
-                      }`}>{m.content}</div>
+
+                    {images.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {images.map((img, i) => (
+                          <Badge key={i} variant="secondary" className="gap-1">
+                            {img.name}
+                            <button onClick={() => setImages((a) => a.filter((_, j) => j !== i))}>
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    <Textarea
+                      rows={3}
+                      placeholder="Describe the rate change, or paste a rate table…"
+                      value={prompt}
+                      onChange={(e) => setPrompt(e.target.value)}
+                      disabled={busy}
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        multiple
+                        accept="image/*,text/*,.csv,.txt,.md,.tsv"
+                        className="hidden"
+                        onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
+                      />
+                      <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={busy}>
+                        <Paperclip className="h-4 w-4" /> Attach
+                      </Button>
+                      <Button className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90" disabled={busy} onClick={send}>
+                        <Send className="h-4 w-4" /> Send
+                      </Button>
                     </div>
-                  ))}
-                  {busy && <div className="text-sm text-muted-foreground">AI is parsing & updating…</div>}
-                </div>
+                    <p className="text-xs text-muted-foreground">
+                      Supports: typed prompts, images, CSV/text. For PDF/Excel rate sheets, open them and paste the contents into the prompt.
+                    </p>
+                  </CardContent>
+                </Card>
 
-                {images.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {images.map((img, i) => (
-                      <Badge key={i} variant="secondary" className="gap-1">
-                        {img.name}
-                        <button onClick={() => setImages((a) => a.filter((_, j) => j !== i))}>
-                          <X className="h-3 w-3" />
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                <Textarea
-                  rows={3}
-                  placeholder="Describe the rate change, or paste a rate table…"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  disabled={busy}
-                />
-                <div className="flex gap-2">
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    multiple
-                    accept="image/*,text/*,.csv,.txt,.md,.tsv"
-                    className="hidden"
-                    onChange={(e) => { handleFiles(e.target.files); e.target.value = ""; }}
-                  />
-                  <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={busy}>
-                    <Paperclip className="h-4 w-4" /> Attach
-                  </Button>
-                  <Button className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90" disabled={busy} onClick={send}>
-                    <Send className="h-4 w-4" /> Send
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Supports: typed prompts, images, CSV/text. For PDF/Excel rate sheets, open them and paste the contents into the prompt.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-lg">
-              <CardHeader><CardTitle>Current config</CardTitle></CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground mb-2">
-                  Updated: {config?.updated_at ? new Date(config.updated_at).toLocaleString() : "—"}
-                </p>
-                <pre className="text-[10px] leading-tight bg-muted p-2 rounded max-h-[28rem] overflow-auto">
+                <Card className="shadow-lg">
+                  <CardHeader><CardTitle>Current config</CardTitle></CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Updated: {config?.updated_at ? new Date(config.updated_at).toLocaleString() : "—"}
+                    </p>
+                    <pre className="text-[10px] leading-tight bg-muted p-2 rounded max-h-[28rem] overflow-auto">
 {config ? JSON.stringify(config.data, null, 2) : "Loading…"}
-                </pre>
-              </CardContent>
-            </Card>
-          </div>
+                    </pre>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       <Footer />
+
     </div>
   );
 };
