@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Lock, Send, Paperclip, X, Sparkles, RefreshCw, LogOut, LayoutDashboard } from "lucide-react";
+import { Lock, Send, Paperclip, X, Sparkles, RefreshCw, LogOut, LayoutDashboard, KeyRound } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -27,6 +28,28 @@ const AdminPage = () => {
   const [busy, setBusy] = useState(false);
   const [config, setConfig] = useState<any>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [pwOpen, setPwOpen] = useState(false);
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+
+  async function changePasscode() {
+    if (newPw.length < 4) { toast.error("Use at least 4 characters"); return; }
+    if (newPw !== confirmPw) { toast.error("Passcodes don't match"); return; }
+    setPwSaving(true);
+    const { data, error } = await supabase.functions.invoke("admin-update-rates", {
+      body: { passcode, action: "change_passcode", newPasscode: newPw },
+    });
+    setPwSaving(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? "Failed");
+      return;
+    }
+    sessionStorage.setItem(STORAGE_KEY, newPw);
+    setPasscode(newPw);
+    setNewPw(""); setConfirmPw(""); setPwOpen(false);
+    toast.success("Passcode updated");
+  }
 
   // Auto-unlock if passcode stored
   useEffect(() => {
@@ -149,6 +172,23 @@ const AdminPage = () => {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={loadConfig}><RefreshCw className="h-4 w-4" /></Button>
+              <Dialog open={pwOpen} onOpenChange={setPwOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm"><KeyRound className="h-4 w-4" /> Change passcode</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Change admin passcode</DialogTitle></DialogHeader>
+                  <div className="space-y-3">
+                    <Input type="password" placeholder="New passcode" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+                    <Input type="password" placeholder="Confirm new passcode" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} />
+                    <p className="text-xs text-muted-foreground">Minimum 4 characters. The new passcode replaces the current one for everyone.</p>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setPwOpen(false)}>Cancel</Button>
+                    <Button onClick={changePasscode} disabled={pwSaving}>{pwSaving ? "Saving…" : "Save"}</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <Button variant="outline" size="sm" onClick={logout}><LogOut className="h-4 w-4" /> Log out</Button>
             </div>
           </div>

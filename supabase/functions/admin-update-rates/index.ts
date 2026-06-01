@@ -18,27 +18,45 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const ADMIN_PASSCODE = Deno.env.get("ADMIN_PASSCODE");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!ADMIN_PASSCODE || !LOVABLE_API_KEY || !SUPABASE_URL || !SERVICE_ROLE) {
+    if (!LOVABLE_API_KEY || !SUPABASE_URL || !SERVICE_ROLE) {
       return json(500, { error: "Server not configured" });
     }
 
     const body = await req.json().catch(() => ({}));
-    const { passcode, action, prompt, data, images } = body as {
-      passcode?: string; action?: string; prompt?: string; data?: unknown; images?: string[];
+    const { passcode, action, prompt, data, images, newPasscode } = body as {
+      passcode?: string; action?: string; prompt?: string;
+      data?: unknown; images?: string[]; newPasscode?: string;
     };
-
-    if (!passcode || passcode !== ADMIN_PASSCODE) {
-      return json(401, { error: "Invalid passcode" });
-    }
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
+    // Resolve the active passcode from DB (fallback to env for backwards compat, then "0000")
+    const { data: settingsRow } = await supabase
+      .from("admin_settings").select("passcode").eq("id", "current").maybeSingle();
+    const ACTIVE_PASSCODE =
+      settingsRow?.passcode ?? Deno.env.get("ADMIN_PASSCODE") ?? "0000";
+
+    if (!passcode || passcode !== ACTIVE_PASSCODE) {
+      return json(401, { error: "Invalid passcode" });
+    }
+
     // verify-only ping
     if (action === "verify") return json(200, { ok: true });
+
+    // Change passcode --------------------------------------------------------
+    if (action === "change_passcode") {
+      if (!newPasscode || typeof newPasscode !== "string" || newPasscode.length < 4) {
+        return json(400, { error: "New passcode must be at least 4 characters." });
+      }
+      const { error: pErr } = await supabase
+        .from("admin_settings")
+        .upsert({ id: "current", passcode: newPasscode, updated_at: new Date().toISOString() });
+      if (pErr) return json(500, { error: pErr.message });
+      return json(200, { ok: true, message: "Passcode updated." });
+    }
 
     // Load current config
     const { data: row, error: readErr } = await supabase

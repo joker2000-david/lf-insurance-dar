@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          id: string
+          passcode: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          passcode: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          passcode?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       calculator_config: {
         Row: {
           data: Json
