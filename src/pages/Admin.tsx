@@ -28,6 +28,28 @@ const AdminPage = () => {
   const [busy, setBusy] = useState(false);
   const [config, setConfig] = useState<any>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [pwOpen, setPwOpen] = useState(false);
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
+
+  async function changePasscode() {
+    if (newPw.length < 4) { toast.error("Use at least 4 characters"); return; }
+    if (newPw !== confirmPw) { toast.error("Passcodes don't match"); return; }
+    setPwSaving(true);
+    const { data, error } = await supabase.functions.invoke("admin-update-rates", {
+      body: { passcode, action: "change_passcode", newPasscode: newPw },
+    });
+    setPwSaving(false);
+    if (error || (data as any)?.error) {
+      toast.error((data as any)?.error ?? error?.message ?? "Failed");
+      return;
+    }
+    sessionStorage.setItem(STORAGE_KEY, newPw);
+    setPasscode(newPw);
+    setNewPw(""); setConfirmPw(""); setPwOpen(false);
+    toast.success("Passcode updated");
+  }
 
   // Auto-unlock if passcode stored
   useEffect(() => {
