@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Send, Paperclip, X, Sparkles, RefreshCw, LogOut } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Lock, Send, Paperclip, X, Sparkles, RefreshCw, LogOut, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import RatesDashboard from "@/components/admin/RatesDashboard";
 
 const STORAGE_KEY = "lf_admin_passcode";
 
