@@ -172,6 +172,23 @@ const AdminPage = () => {
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={loadConfig}><RefreshCw className="h-4 w-4" /></Button>
+              <Dialog open={pwOpen} onOpenChange={setPwOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm"><KeyRound className="h-4 w-4" /> Change passcode</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Change admin passcode</DialogTitle></DialogHeader>
+                  <div className="space-y-3">
+                    <Input type="password" placeholder="New passcode" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+                    <Input type="password" placeholder="Confirm new passcode" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} />
+                    <p className="text-xs text-muted-foreground">Minimum 4 characters. The new passcode replaces the current one for everyone.</p>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setPwOpen(false)}>Cancel</Button>
+                    <Button onClick={changePasscode} disabled={pwSaving}>{pwSaving ? "Saving…" : "Save"}</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <Button variant="outline" size="sm" onClick={logout}><LogOut className="h-4 w-4" /> Log out</Button>
             </div>
           </div>
