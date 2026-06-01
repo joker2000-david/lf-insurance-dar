@@ -17,6 +17,7 @@ const Navigation = () => {
     { name: "Blog", to: "/blog" },
     { name: "FAQ", to: "/faq" },
     { name: "Contact", to: "/contact" },
+    { name: "Admin", to: "/admin" },
   ];
 
   return (
