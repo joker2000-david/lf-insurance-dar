@@ -59,16 +59,8 @@ function computeFamilyPremiums(cfg: CalculatorConfig, members: FamilyMember[]) {
   return result;
 }
 
-function recommendFamilyCategory(cfg: CalculatorConfig, members: FamilyMember[], budgetTzs?: number) {
+function recommendFamilyCategory(cfg: CalculatorConfig, members: FamilyMember[]) {
   const totals = computeFamilyPremiums(cfg, members);
-  if (budgetTzs && budgetTzs > 0) {
-    for (const p of [...cfg.medicalPlans].reverse()) {
-      if (totals[p.key] <= budgetTzs)
-        return { plan: p.key, annualPremium: totals[p.key], reasoning: `Best plan fitting budget of TZS ${budgetTzs.toLocaleString()}.` };
-    }
-    const first = cfg.medicalPlans[0];
-    return { plan: first.key, annualPremium: totals[first.key], reasoning: "Budget below smallest premium. Showing the most affordable plan." };
-  }
   const size = members.length;
   const idx = size <= 2 ? 1 : size <= 4 ? 2 : 3;
   const plan = cfg.medicalPlans[Math.min(idx, cfg.medicalPlans.length - 1)];
