@@ -134,9 +134,7 @@ const MotorCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
 
 const FamilyCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
   const [members, setMembers] = useState<FamilyMember[]>([{ role: "Self", age: 35 }, { role: "Spouse", age: 32 }]);
-  const [budget, setBudget] = useState<number>(0);
-  const totals = useMemo(() => computeFamilyPremiums(cfg, members), [cfg, members]);
-  const recommended = useMemo(() => recommendFamilyCategory(cfg, members, budget || undefined), [cfg, members, budget]);
+  const recommended = useMemo(() => recommendFamilyCategory(cfg, members), [cfg, members]);
   const update = (i: number, patch: Partial<FamilyMember>) => setMembers((arr) => arr.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
   const remove = (i: number) => setMembers((arr) => arr.filter((_, idx) => idx !== i));
   const add = () => setMembers((arr) => [...arr, { role: "Child", age: 5 }]);
@@ -144,7 +142,7 @@ const FamilyCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
   return (
     <div className="grid lg:grid-cols-5 gap-6">
       <Card className="lg:col-span-3 shadow-lg border-accent/20">
-        <CardHeader><CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5 text-accent" /> Family Members</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5 text-accent" /> Members</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           {members.map((m, i) => (
             <div key={i} className="grid grid-cols-12 gap-2 items-end">
@@ -153,24 +151,10 @@ const FamilyCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
               <div className="col-span-2"><Button variant="outline" size="icon" onClick={() => remove(i)} disabled={members.length <= 1}><Trash2 className="h-4 w-4" /></Button></div>
             </div>
           ))}
-          <Button variant="outline" onClick={add} className="w-full"><Plus className="h-4 w-4" /> Add Family Member</Button>
-          <div className="pt-4 border-t">
-            <Label>Annual Budget (TZS) — optional</Label>
-            <Input type="number" min={0} step={100000} value={budget} onChange={(e) => setBudget(Number(e.target.value) || 0)} placeholder="e.g. 5,000,000" />
-          </div>
-          <div className="pt-4 border-t">
-            <p className="text-sm font-semibold mb-2">All Plan Totals (annual)</p>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              {cfg.medicalPlans.map((p) => (
-                <div key={p.key} className="flex justify-between p-2 rounded bg-muted/50">
-                  <span className="font-medium">{p.key}</span>
-                  <span className="text-accent font-semibold">{fmtTZS(totals[p.key])}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Button variant="outline" onClick={add} className="w-full"><Plus className="h-4 w-4" /> Add Member</Button>
         </CardContent>
       </Card>
+
 
       <Card className="lg:col-span-2 shadow-xl border-accent bg-gradient-to-br from-primary to-primary-light text-primary-foreground h-fit">
         <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Recommended Plan</CardTitle></CardHeader>
