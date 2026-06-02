@@ -213,7 +213,7 @@ const Quote = () => {
             <div className="grid md:grid-cols-2 gap-6">
               {[
                 { key: "motor", icon: Car, title: "Motor Insurance", desc: "Insure your car, motorcycle or commercial vehicle." },
-                { key: "family", icon: Users, title: "Family Insurance", desc: "Medical cover for you, your spouse and your children." },
+                { key: "family", icon: Users, title: "Insurance", desc: "Medical cover for you, your spouse and your children." },
               ].map((opt) => (
                 <button
                   key={opt.key}
