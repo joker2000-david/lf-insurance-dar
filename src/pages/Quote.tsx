@@ -75,8 +75,7 @@ const Quote = () => {
   const familyResult = useMemo(() => {
     const valid = family.members.filter((m) => m.age >= 0 && m.age <= 59);
     if (valid.length === 0) return null;
-    const budget = parseInt(family.budget.replace(/\D/g, "") || "0", 10);
-    const rec = recommendFamilyCategory(valid, budget || undefined);
+    const rec = recommendFamilyCategory(valid);
     const all = computeFamilyPremiums(valid);
     return { rec, all };
   }, [family]);
