@@ -218,7 +218,7 @@ const CalculatorSection = () => {
         <Tabs defaultValue="motor" className="w-full">
           <TabsList className="grid w-full md:w-96 mx-auto grid-cols-2 mb-8">
             <TabsTrigger value="motor"><Car className="h-4 w-4 mr-2" /> Motor</TabsTrigger>
-            <TabsTrigger value="family"><Heart className="h-4 w-4 mr-2" /> Family Medical</TabsTrigger>
+            <TabsTrigger value="family"><Heart className="h-4 w-4 mr-2" /> Medical</TabsTrigger>
           </TabsList>
           <TabsContent value="motor"><MotorCalculator cfg={config} /></TabsContent>
           <TabsContent value="family">
