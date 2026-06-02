@@ -1,20 +1,19 @@
 export const medicalPlans = [
-  { key: "AFYA BASIC", limit: "TZS 20,000,000", region: "Tanzania" },
-  { key: "AFYA PLUS", limit: "TZS 30,000,000", region: "Tanzania + India referral" },
-  { key: "AFYA SUPA", limit: "TZS 50,000,000", region: "Tanzania + India referral" },
-  { key: "AFYA EXTREME", limit: "TZS 100,000,000", region: "Tanzania + India referral" },
+  { key: "BRONZE", limit: "TZS 20,000,000", region: "Tanzania" },
+  { key: "SILVER", limit: "TZS 50,000,000", region: "Tanzania + India referral" },
+  { key: "GOLD", limit: "TZS 100,000,000", region: "Tanzania + India referral" },
 ] as const;
 
 export const ageBands = ["0-17", "18-24", "25-39", "40-49", "50-54", "55-59"] as const;
 
-// Annual premium rates per member (TZS) — Strategis Health Insurance 2025/2026
+// Annual premium rates per member (TZS)
 export const premiumRates: Record<string, Record<string, number>> = {
-  "0-17":  { "AFYA BASIC": 800415,  "AFYA PLUS": 920477,  "AFYA SUPA": 1081561, "AFYA EXTREME": 1243795 },
-  "18-24": { "AFYA BASIC": 920588,  "AFYA PLUS": 1058676, "AFYA SUPA": 1258766, "AFYA EXTREME": 1447581 },
-  "25-39": { "AFYA BASIC": 1058400, "AFYA PLUS": 1270080, "AFYA SUPA": 1485994, "AFYA EXTREME": 1708893 },
-  "40-49": { "AFYA BASIC": 1216609, "AFYA PLUS": 1484263, "AFYA SUPA": 1781116, "AFYA EXTREME": 2048283 },
-  "50-54": { "AFYA BASIC": 1460813, "AFYA PLUS": 1781116, "AFYA SUPA": 2092811, "AFYA EXTREME": 2406733 },
-  "55-59": { "AFYA BASIC": 1752975, "AFYA PLUS": 2138630, "AFYA SUPA": 2459424, "AFYA EXTREME": 2828338 },
+  "0-17":  { BRONZE: 800415,  SILVER: 1081561, GOLD: 1243795 },
+  "18-24": { BRONZE: 920588,  SILVER: 1258766, GOLD: 1447581 },
+  "25-39": { BRONZE: 1058400, SILVER: 1485994, GOLD: 1708893 },
+  "40-49": { BRONZE: 1216609, SILVER: 1781116, GOLD: 2048283 },
+  "50-54": { BRONZE: 1460813, SILVER: 2092811, GOLD: 2406733 },
+  "55-59": { BRONZE: 1752975, SILVER: 2459424, GOLD: 2828338 },
 };
 
 export const motorCoverTypes = [
@@ -38,13 +37,15 @@ export const otherInsuranceTypes = [
   "Other",
 ] as const;
 
+// VAT applied to motor premiums
+export const MOTOR_VAT_RATE = 0.18;
+
 // ---------- Motor category logic (TIRA-aligned indicative rates) ----------
-// Annual premium rate as a percentage of the sum insured for comprehensive cover.
 export const motorRates = {
   comprehensive: {
-    private: { rate: 0.04, minPremium: 350_000 },           // 4% of value
-    commercial: { rate: 0.05, minPremium: 600_000 },        // 5% of value
-    motorcycle: { rate: 0.06, minPremium: 200_000 },        // 6% of value
+    private: { rate: 0.04, minPremium: 350_000 },
+    commercial: { rate: 0.05, minPremium: 600_000 },
+    motorcycle: { rate: 0.06, minPremium: 200_000 },
   },
   tpft: { private: 250_000, commercial: 450_000, motorcycle: 150_000 },
   tpo:  { private: 150_000, commercial: 300_000, motorcycle: 80_000 },
@@ -77,11 +78,7 @@ export function recommendMotorCategory(
         ? "Comprehensive — Motorcycle / Bodaboda"
         : use === "commercial"
         ? "Comprehensive — Commercial Vehicle"
-        : sumInsured >= 80_000_000
-        ? "Comprehensive Premium — Private Car"
-        : sumInsured >= 35_000_000
-        ? "Comprehensive Standard — Private Car"
-        : "Comprehensive Essential — Private Car";
+        : "Comprehensive — Private Car";
   } else if (cover === "tpft") {
     premium = motorRates.tpft[use];
     category = `Third Party Fire & Theft — ${labelForUse(use)}`;
@@ -90,6 +87,8 @@ export function recommendMotorCategory(
     category = `Third Party Only — ${labelForUse(use)}`;
   }
 
+  premium = Math.round(premium * (1 + MOTOR_VAT_RATE));
+  notes.push("Includes 18% VAT.");
   notes.push("Indicative only. Final premium confirmed by underwriter.");
   return { category, annualPremium: premium, notes };
 }
@@ -122,43 +121,21 @@ export function computeFamilyPremiums(members: FamilyMember[]) {
 }
 
 export function recommendFamilyCategory(
-  members: FamilyMember[],
-  budgetTzs?: number
+  members: FamilyMember[]
 ): { plan: string; annualPremium: number; reasoning: string } {
   const totals = computeFamilyPremiums(members);
   const size = members.length;
-
-  // If a budget is provided, pick the richest plan that fits it.
-  if (budgetTzs && budgetTzs > 0) {
-    const ordered = [...medicalPlans].reverse(); // EXTREME → BASIC
-    for (const p of ordered) {
-      if (totals[p.key] <= budgetTzs) {
-        return {
-          plan: p.key,
-          annualPremium: totals[p.key],
-          reasoning: `Best plan that fits your annual budget of TZS ${budgetTzs.toLocaleString()}.`,
-        };
-      }
-    }
-    return {
-      plan: "AFYA BASIC",
-      annualPremium: totals["AFYA BASIC"],
-      reasoning: `Your budget is below the smallest family premium. AFYA BASIC is the most affordable starting point.`,
-    };
-  }
-
-  // No budget: recommend by family size
   let plan: string;
   let reasoning: string;
   if (size <= 2) {
-    plan = "AFYA PLUS";
-    reasoning = "Couple-sized cover — AFYA PLUS balances cost with India referral access.";
+    plan = "SILVER";
+    reasoning = "Couple-sized cover — SILVER balances cost with India referral access.";
   } else if (size <= 4) {
-    plan = "AFYA SUPA";
-    reasoning = "For families up to 4, AFYA SUPA offers a higher TZS 50M limit with broader benefits.";
+    plan = "SILVER";
+    reasoning = "For families up to 4, SILVER offers a TZS 50M limit with broader benefits.";
   } else {
-    plan = "AFYA EXTREME";
-    reasoning = "For larger families, AFYA EXTREME provides the highest TZS 100M annual limit.";
+    plan = "GOLD";
+    reasoning = "For larger families, GOLD provides the highest TZS 100M annual limit.";
   }
   return { plan, annualPremium: totals[plan], reasoning };
 }
