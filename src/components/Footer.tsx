@@ -24,7 +24,7 @@ const Footer = () => {
       { label: "Fire & Perils", href: "/services#fire-perils-insurance" },
       { label: "Marine Insurance", href: "/services#marine-insurance" },
       { label: "Travel Insurance", href: "/services#travel-insurance" },
-      { label: "Family Insurance", href: "/services#family-insurance" },
+      { label: "Insurance", href: "/services#family-insurance" },
     ],
     "Quick Links": [
       { label: "About Us", href: "/about" },

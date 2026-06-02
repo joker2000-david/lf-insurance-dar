@@ -96,7 +96,7 @@ const Hero = () => {
                     <option>Fire & Perils</option>
                     <option>Marine Insurance</option>
                     <option>Travel Insurance</option>
-                    <option>Life / Family Insurance</option>
+                    <option>Life Insurance</option>
                     <option>Engineering Insurance</option>
                     <option>Personal Accident</option>
                   </select>

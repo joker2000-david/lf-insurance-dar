@@ -24,6 +24,8 @@ function ageToBand(age: number, bands: string[]) {
   return bands[bands.length - 1];
 }
 
+const MOTOR_VAT_RATE = 0.18;
+
 function recommendMotorCategory(cfg: CalculatorConfig, use: VehicleUse, cover: CoverLevel, sumInsured: number, year?: number) {
   const notes: string[] = [];
   let category = "", premium = 0;
@@ -40,6 +42,8 @@ function recommendMotorCategory(cfg: CalculatorConfig, use: VehicleUse, cover: C
   } else {
     premium = cfg.motorRates.tpo[use]; category = `Third Party Only — ${useLabel}`;
   }
+  premium = Math.round(premium * (1 + MOTOR_VAT_RATE));
+  notes.push("Includes 18% VAT.");
   notes.push("Indicative only. Final premium confirmed by underwriter.");
   return { category, annualPremium: premium, notes };
 }
@@ -55,16 +59,8 @@ function computeFamilyPremiums(cfg: CalculatorConfig, members: FamilyMember[]) {
   return result;
 }
 
-function recommendFamilyCategory(cfg: CalculatorConfig, members: FamilyMember[], budgetTzs?: number) {
+function recommendFamilyCategory(cfg: CalculatorConfig, members: FamilyMember[]) {
   const totals = computeFamilyPremiums(cfg, members);
-  if (budgetTzs && budgetTzs > 0) {
-    for (const p of [...cfg.medicalPlans].reverse()) {
-      if (totals[p.key] <= budgetTzs)
-        return { plan: p.key, annualPremium: totals[p.key], reasoning: `Best plan fitting budget of TZS ${budgetTzs.toLocaleString()}.` };
-    }
-    const first = cfg.medicalPlans[0];
-    return { plan: first.key, annualPremium: totals[first.key], reasoning: "Budget below smallest premium. Showing the most affordable plan." };
-  }
   const size = members.length;
   const idx = size <= 2 ? 1 : size <= 4 ? 2 : 3;
   const plan = cfg.medicalPlans[Math.min(idx, cfg.medicalPlans.length - 1)];
@@ -138,9 +134,7 @@ const MotorCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
 
 const FamilyCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
   const [members, setMembers] = useState<FamilyMember[]>([{ role: "Self", age: 35 }, { role: "Spouse", age: 32 }]);
-  const [budget, setBudget] = useState<number>(0);
-  const totals = useMemo(() => computeFamilyPremiums(cfg, members), [cfg, members]);
-  const recommended = useMemo(() => recommendFamilyCategory(cfg, members, budget || undefined), [cfg, members, budget]);
+  const recommended = useMemo(() => recommendFamilyCategory(cfg, members), [cfg, members]);
   const update = (i: number, patch: Partial<FamilyMember>) => setMembers((arr) => arr.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
   const remove = (i: number) => setMembers((arr) => arr.filter((_, idx) => idx !== i));
   const add = () => setMembers((arr) => [...arr, { role: "Child", age: 5 }]);
@@ -148,7 +142,7 @@ const FamilyCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
   return (
     <div className="grid lg:grid-cols-5 gap-6">
       <Card className="lg:col-span-3 shadow-lg border-accent/20">
-        <CardHeader><CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5 text-accent" /> Family Members</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5 text-accent" /> Members</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           {members.map((m, i) => (
             <div key={i} className="grid grid-cols-12 gap-2 items-end">
@@ -157,24 +151,10 @@ const FamilyCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
               <div className="col-span-2"><Button variant="outline" size="icon" onClick={() => remove(i)} disabled={members.length <= 1}><Trash2 className="h-4 w-4" /></Button></div>
             </div>
           ))}
-          <Button variant="outline" onClick={add} className="w-full"><Plus className="h-4 w-4" /> Add Family Member</Button>
-          <div className="pt-4 border-t">
-            <Label>Annual Budget (TZS) — optional</Label>
-            <Input type="number" min={0} step={100000} value={budget} onChange={(e) => setBudget(Number(e.target.value) || 0)} placeholder="e.g. 5,000,000" />
-          </div>
-          <div className="pt-4 border-t">
-            <p className="text-sm font-semibold mb-2">All Plan Totals (annual)</p>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              {cfg.medicalPlans.map((p) => (
-                <div key={p.key} className="flex justify-between p-2 rounded bg-muted/50">
-                  <span className="font-medium">{p.key}</span>
-                  <span className="text-accent font-semibold">{fmtTZS(totals[p.key])}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Button variant="outline" onClick={add} className="w-full"><Plus className="h-4 w-4" /> Add Member</Button>
         </CardContent>
       </Card>
+
 
       <Card className="lg:col-span-2 shadow-xl border-accent bg-gradient-to-br from-primary to-primary-light text-primary-foreground h-fit">
         <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Recommended Plan</CardTitle></CardHeader>
@@ -238,7 +218,7 @@ const CalculatorSection = () => {
         <Tabs defaultValue="motor" className="w-full">
           <TabsList className="grid w-full md:w-96 mx-auto grid-cols-2 mb-8">
             <TabsTrigger value="motor"><Car className="h-4 w-4 mr-2" /> Motor</TabsTrigger>
-            <TabsTrigger value="family"><Heart className="h-4 w-4 mr-2" /> Family Medical</TabsTrigger>
+            <TabsTrigger value="family"><Heart className="h-4 w-4 mr-2" /> Medical</TabsTrigger>
           </TabsList>
           <TabsContent value="motor"><MotorCalculator cfg={config} /></TabsContent>
           <TabsContent value="family">

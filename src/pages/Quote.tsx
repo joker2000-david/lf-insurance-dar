@@ -75,8 +75,7 @@ const Quote = () => {
   const familyResult = useMemo(() => {
     const valid = family.members.filter((m) => m.age >= 0 && m.age <= 59);
     if (valid.length === 0) return null;
-    const budget = parseInt(family.budget.replace(/\D/g, "") || "0", 10);
-    const rec = recommendFamilyCategory(valid, budget || undefined);
+    const rec = recommendFamilyCategory(valid);
     const all = computeFamilyPremiums(valid);
     return { rec, all };
   }, [family]);
@@ -214,7 +213,7 @@ const Quote = () => {
             <div className="grid md:grid-cols-2 gap-6">
               {[
                 { key: "motor", icon: Car, title: "Motor Insurance", desc: "Insure your car, motorcycle or commercial vehicle." },
-                { key: "family", icon: Users, title: "Family Insurance", desc: "Medical cover for you, your spouse and your children." },
+                { key: "family", icon: Users, title: "Insurance", desc: "Medical cover for you, your spouse and your children." },
               ].map((opt) => (
                 <button
                   key={opt.key}

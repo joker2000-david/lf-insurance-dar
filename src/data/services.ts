@@ -116,7 +116,7 @@ export const services: Service[] = [
   },
   {
     slug: "family-insurance",
-    title: "Family Insurance",
+    title: "Insurance",
     short: "Comprehensive protection for every member of your family.",
     description:
       "Flexible family plans covering life, education, spouse protection and continuous family income.",
