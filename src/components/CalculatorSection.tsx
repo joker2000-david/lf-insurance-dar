@@ -24,6 +24,8 @@ function ageToBand(age: number, bands: string[]) {
   return bands[bands.length - 1];
 }
 
+const MOTOR_VAT_RATE = 0.18;
+
 function recommendMotorCategory(cfg: CalculatorConfig, use: VehicleUse, cover: CoverLevel, sumInsured: number, year?: number) {
   const notes: string[] = [];
   let category = "", premium = 0;
@@ -40,6 +42,8 @@ function recommendMotorCategory(cfg: CalculatorConfig, use: VehicleUse, cover: C
   } else {
     premium = cfg.motorRates.tpo[use]; category = `Third Party Only — ${useLabel}`;
   }
+  premium = Math.round(premium * (1 + MOTOR_VAT_RATE));
+  notes.push("Includes 18% VAT.");
   notes.push("Indicative only. Final premium confirmed by underwriter.");
   return { category, annualPremium: premium, notes };
 }
