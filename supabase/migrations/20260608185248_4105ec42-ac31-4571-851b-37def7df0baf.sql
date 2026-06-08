@@ -1,0 +1,1 @@
+UPDATE public.calculator_config SET data = '{}'::jsonb WHERE id = 'current';
