@@ -1,19 +1,21 @@
 export const medicalPlans = [
   { key: "BRONZE", limit: "TZS 20,000,000", region: "Tanzania" },
-  { key: "SILVER", limit: "TZS 50,000,000", region: "Tanzania + India referral" },
-  { key: "GOLD", limit: "TZS 100,000,000", region: "Tanzania + India referral" },
+  { key: "SILVER", limit: "TZS 30,000,000", region: "Tanzania + India referral" },
+  { key: "GOLD", limit: "TZS 50,000,000", region: "Tanzania + India referral" },
+  { key: "PLATINUM", limit: "TZS 100,000,000", region: "Tanzania + India referral" },
 ] as const;
 
 export const ageBands = ["0-17", "18-24", "25-39", "40-49", "50-54", "55-59"] as const;
 
-// Annual premium rates per member (TZS)
+// Annual premium rates per member (TZS) — Strategis Health 2025/2026
+// BRONZE = AFYA BASIC, SILVER = AFYA PLUS, GOLD = AFYA SUPA, PLATINUM = AFYA EXTREME
 export const premiumRates: Record<string, Record<string, number>> = {
-  "0-17":  { BRONZE: 800415,  SILVER: 1081561, GOLD: 1243795 },
-  "18-24": { BRONZE: 920588,  SILVER: 1258766, GOLD: 1447581 },
-  "25-39": { BRONZE: 1058400, SILVER: 1485994, GOLD: 1708893 },
-  "40-49": { BRONZE: 1216609, SILVER: 1781116, GOLD: 2048283 },
-  "50-54": { BRONZE: 1460813, SILVER: 2092811, GOLD: 2406733 },
-  "55-59": { BRONZE: 1752975, SILVER: 2459424, GOLD: 2828338 },
+  "0-17":  { BRONZE: 800415,  SILVER: 920477,  GOLD: 1081561, PLATINUM: 1243795 },
+  "18-24": { BRONZE: 920588,  SILVER: 1058676, GOLD: 1258766, PLATINUM: 1447581 },
+  "25-39": { BRONZE: 1058400, SILVER: 1270080, GOLD: 1485994, PLATINUM: 1708893 },
+  "40-49": { BRONZE: 1216609, SILVER: 1484263, GOLD: 1781116, PLATINUM: 2048283 },
+  "50-54": { BRONZE: 1460813, SILVER: 1781116, GOLD: 2092811, PLATINUM: 2406733 },
+  "55-59": { BRONZE: 1752975, SILVER: 2138630, GOLD: 2459424, PLATINUM: 2828338 },
 };
 
 export const motorCoverTypes = [
@@ -33,7 +35,7 @@ export const otherInsuranceTypes = [
   "Engineering / Contractors All Risk",
   "Personal Accident",
   "Personal Life",
-  "Family / Education",
+  "Education",
   "Other",
 ] as const;
 
@@ -129,13 +131,13 @@ export function recommendFamilyCategory(
   let reasoning: string;
   if (size <= 2) {
     plan = "SILVER";
-    reasoning = "Couple-sized cover — SILVER balances cost with India referral access.";
+    reasoning = "Couple-sized cover — SILVER offers TZS 30M with India referral access.";
   } else if (size <= 4) {
-    plan = "SILVER";
-    reasoning = "For families up to 4, SILVER offers a TZS 50M limit with broader benefits.";
-  } else {
     plan = "GOLD";
-    reasoning = "For larger families, GOLD provides the highest TZS 100M annual limit.";
+    reasoning = "For families up to 4, GOLD provides TZS 50M with broader benefits.";
+  } else {
+    plan = "PLATINUM";
+    reasoning = "For larger families, PLATINUM provides the top TZS 100M annual limit.";
   }
   return { plan, annualPremium: totals[plan], reasoning };
 }
