@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Deny all client access to admin_settings" ON public.admin_settings;
