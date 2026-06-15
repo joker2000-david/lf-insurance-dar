@@ -7,12 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Calculator as CalcIcon, Car, Heart, Plus, Trash2, MessageCircle, Sparkles } from "lucide-react";
+import { Calculator as CalcIcon, Car, Heart, MessageCircle, Sparkles } from "lucide-react";
 import { WHATSAPP_URL } from "@/lib/whatsapp";
 import { useCalculatorConfig, type CalculatorConfig } from "@/hooks/useCalculatorConfig";
 import { vehicleClasses, computeMotorPremium, type CoverLevel, type VehicleClassKey } from "@/data/motor-rates";
 
-interface FamilyMember { role: string; age: number }
 
 const fmtTZS = (n: number) => "TZS " + Math.round(n).toLocaleString("en-US");
 
