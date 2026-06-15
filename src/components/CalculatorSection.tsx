@@ -7,41 +7,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGr
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Calculator as CalcIcon, Car, Heart, Plus, Trash2, MessageCircle, Sparkles } from "lucide-react";
+import { Calculator as CalcIcon, Car, Heart, MessageCircle, Sparkles } from "lucide-react";
 import { WHATSAPP_URL } from "@/lib/whatsapp";
 import { useCalculatorConfig, type CalculatorConfig } from "@/hooks/useCalculatorConfig";
 import { vehicleClasses, computeMotorPremium, type CoverLevel, type VehicleClassKey } from "@/data/motor-rates";
 
-interface FamilyMember { role: string; age: number }
 
 const fmtTZS = (n: number) => "TZS " + Math.round(n).toLocaleString("en-US");
 
-function ageToBand(age: number, bands: string[]) {
-  for (const b of bands) {
-    const [lo, hi] = b.split("-").map(Number);
-    if (age >= lo && age <= (hi || 200)) return b;
-  }
-  return bands[bands.length - 1];
-}
-
-function computeFamilyPremiums(cfg: CalculatorConfig, members: FamilyMember[]) {
+function computeBandTotals(cfg: CalculatorConfig, lives: Record<string, number>) {
   const result: Record<string, number> = {};
   for (const plan of cfg.medicalPlans) {
-    result[plan.key] = members.reduce((sum, m) => {
-      const band = ageToBand(m.age, cfg.ageBands);
-      return sum + (cfg.premiumRates[band]?.[plan.key] ?? 0);
-    }, 0);
+    result[plan.key] = cfg.ageBands.reduce(
+      (sum, band) => sum + (lives[band] || 0) * (cfg.premiumRates[band]?.[plan.key] ?? 0),
+      0,
+    );
   }
   return result;
 }
 
-function recommendFamilyCategory(cfg: CalculatorConfig, members: FamilyMember[]) {
-  const totals = computeFamilyPremiums(cfg, members);
-  const size = members.length;
-  const idx = size <= 2 ? 1 : size <= 4 ? 2 : 3;
-  const plan = cfg.medicalPlans[Math.min(idx, cfg.medicalPlans.length - 1)];
-  return { plan: plan.key, annualPremium: totals[plan.key], reasoning: `Recommended for a family of ${size}.` };
-}
 
 const groupedClasses = vehicleClasses.reduce((acc, c) => {
   (acc[c.group] ||= []).push(c);
@@ -187,50 +171,70 @@ const MotorCalculator = () => {
   );
 };
 
+const PLAN_LABELS: Record<string, string> = {
+  BRONZE: "Afya Basic",
+  SILVER: "Afya Plus",
+  GOLD: "Afya Supa",
+  PLATINUM: "Afya Extreme",
+};
+
 const FamilyCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
-  const [members, setMembers] = useState<FamilyMember[]>([{ role: "Self", age: 35 }, { role: "Spouse", age: 32 }]);
-  const recommended = useMemo(() => recommendFamilyCategory(cfg, members), [cfg, members]);
-  const update = (i: number, patch: Partial<FamilyMember>) => setMembers((arr) => arr.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
-  const remove = (i: number) => setMembers((arr) => arr.filter((_, idx) => idx !== i));
-  const add = () => setMembers((arr) => [...arr, { role: "Child", age: 5 }]);
+  const [lives, setLives] = useState<Record<string, number>>(() =>
+    Object.fromEntries(cfg.ageBands.map((b) => [b, 0])),
+  );
+  const totals = useMemo(() => computeBandTotals(cfg, lives), [cfg, lives]);
+  const totalLives = Object.values(lives).reduce((a, b) => a + b, 0);
+
+  const setBand = (band: string, v: number) =>
+    setLives((prev) => ({ ...prev, [band]: Math.max(0, Math.floor(v) || 0) }));
 
   return (
     <div className="grid lg:grid-cols-5 gap-6">
       <Card className="lg:col-span-3 shadow-lg border-accent/20">
-        <CardHeader><CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5 text-accent" /> Members</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          {members.map((m, i) => (
-            <div key={i} className="grid grid-cols-12 gap-2 items-end">
-              <div className="col-span-5"><Label className="text-xs">Role</Label><Input value={m.role} onChange={(e) => update(i, { role: e.target.value })} /></div>
-              <div className="col-span-5"><Label className="text-xs">Age</Label><Input type="number" min={0} max={59} value={m.age} onChange={(e) => update(i, { age: Number(e.target.value) || 0 })} /></div>
-              <div className="col-span-2"><Button variant="outline" size="icon" onClick={() => remove(i)} disabled={members.length <= 1}><Trash2 className="h-4 w-4" /></Button></div>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Heart className="h-5 w-5 text-accent" /> Number of Lives per Age Band</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {cfg.ageBands.map((band) => (
+            <div key={band} className="grid grid-cols-12 gap-3 items-center">
+              <Label className="col-span-4 text-sm">Age {band}</Label>
+              <Input
+                className="col-span-4"
+                type="number"
+                min={0}
+                value={lives[band] ?? 0}
+                onChange={(e) => setBand(band, Number(e.target.value))}
+              />
+              <p className="col-span-4 text-xs text-muted-foreground">
+                {(cfg.premiumRates[band]?.[cfg.medicalPlans[0].key] ?? 0).toLocaleString()} – {(cfg.premiumRates[band]?.[cfg.medicalPlans[cfg.medicalPlans.length - 1].key] ?? 0).toLocaleString()} TZS / member
+              </p>
             </div>
           ))}
-          <Button variant="outline" onClick={add} className="w-full"><Plus className="h-4 w-4" /> Add Member</Button>
+          <div className="pt-2 text-sm text-muted-foreground">Total lives: <span className="font-semibold text-foreground">{totalLives}</span></div>
         </CardContent>
       </Card>
 
       <Card className="lg:col-span-2 shadow-xl border-accent bg-gradient-to-br from-primary to-primary-light text-primary-foreground h-fit">
-        <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Recommended Plan</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <Badge className="bg-accent text-accent-foreground">{recommended.plan}</Badge>
-          <div>
-            <p className="text-sm opacity-80">Total Annual Premium</p>
-            <p className="text-3xl font-bold text-accent">{fmtTZS(recommended.annualPremium)}</p>
-          </div>
-          <p className="text-sm opacity-90">{recommended.reasoning}</p>
-          <div className="text-xs opacity-80 space-y-1">
-            <p>Coverage limit: {cfg.medicalPlans.find((p) => p.key === recommended.plan)?.limit}</p>
-            <p>Region: {cfg.medicalPlans.find((p) => p.key === recommended.plan)?.region}</p>
-          </div>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-accent" /> Annual Premium by Plan</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          {cfg.medicalPlans.map((p) => (
+            <div key={p.key} className="flex items-center justify-between border-b border-white/10 pb-2 last:border-0">
+              <div>
+                <p className="text-sm font-semibold">{p.key}</p>
+                <p className="text-[11px] opacity-75">{PLAN_LABELS[p.key] ?? p.key} · {p.limit}</p>
+              </div>
+              <p className="text-lg font-bold text-accent">{fmtTZS(totals[p.key] || 0)}</p>
+            </div>
+          ))}
           <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">
-            <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90"><MessageCircle className="h-4 w-4" /> Confirm via WhatsApp</Button>
+            <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90 mt-2"><MessageCircle className="h-4 w-4" /> Confirm via WhatsApp</Button>
           </a>
         </CardContent>
       </Card>
     </div>
   );
 };
+
 
 const RateTable = ({ cfg }: { cfg: CalculatorConfig }) => (
   <Card className="mt-10 shadow-md">
