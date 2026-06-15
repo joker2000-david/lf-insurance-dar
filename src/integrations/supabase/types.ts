@@ -17,17 +17,17 @@ export type Database = {
       admin_settings: {
         Row: {
           id: string
-          passcode: string
+          passcode_hash: string
           updated_at: string
         }
         Insert: {
           id?: string
-          passcode: string
+          passcode_hash: string
           updated_at?: string
         }
         Update: {
           id?: string
-          passcode?: string
+          passcode_hash?: string
           updated_at?: string
         }
         Relationships: []
@@ -91,7 +91,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      set_admin_passcode: {
+        Args: { _new_passcode: string }
+        Returns: undefined
+      }
+      verify_admin_passcode: { Args: { _passcode: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
