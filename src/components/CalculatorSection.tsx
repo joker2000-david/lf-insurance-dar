@@ -16,32 +16,17 @@ interface FamilyMember { role: string; age: number }
 
 const fmtTZS = (n: number) => "TZS " + Math.round(n).toLocaleString("en-US");
 
-function ageToBand(age: number, bands: string[]) {
-  for (const b of bands) {
-    const [lo, hi] = b.split("-").map(Number);
-    if (age >= lo && age <= (hi || 200)) return b;
-  }
-  return bands[bands.length - 1];
-}
-
-function computeFamilyPremiums(cfg: CalculatorConfig, members: FamilyMember[]) {
+function computeBandTotals(cfg: CalculatorConfig, lives: Record<string, number>) {
   const result: Record<string, number> = {};
   for (const plan of cfg.medicalPlans) {
-    result[plan.key] = members.reduce((sum, m) => {
-      const band = ageToBand(m.age, cfg.ageBands);
-      return sum + (cfg.premiumRates[band]?.[plan.key] ?? 0);
-    }, 0);
+    result[plan.key] = cfg.ageBands.reduce(
+      (sum, band) => sum + (lives[band] || 0) * (cfg.premiumRates[band]?.[plan.key] ?? 0),
+      0,
+    );
   }
   return result;
 }
 
-function recommendFamilyCategory(cfg: CalculatorConfig, members: FamilyMember[]) {
-  const totals = computeFamilyPremiums(cfg, members);
-  const size = members.length;
-  const idx = size <= 2 ? 1 : size <= 4 ? 2 : 3;
-  const plan = cfg.medicalPlans[Math.min(idx, cfg.medicalPlans.length - 1)];
-  return { plan: plan.key, annualPremium: totals[plan.key], reasoning: `Recommended for a family of ${size}.` };
-}
 
 const groupedClasses = vehicleClasses.reduce((acc, c) => {
   (acc[c.group] ||= []).push(c);
