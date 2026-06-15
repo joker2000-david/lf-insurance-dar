@@ -33,15 +33,15 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    // Resolve the active passcode from DB (fallback to env for backwards compat, then "0000")
-    const { data: settingsRow } = await supabase
-      .from("admin_settings").select("passcode").eq("id", "current").maybeSingle();
-    const ACTIVE_PASSCODE =
-      settingsRow?.passcode ?? Deno.env.get("ADMIN_PASSCODE") ?? "0000";
-
-    if (!passcode || passcode !== ACTIVE_PASSCODE) {
+    // Verify passcode against bcrypt hash via security-definer DB function
+    if (!passcode || typeof passcode !== "string") {
       return json(401, { error: "Invalid passcode" });
     }
+    const { data: ok, error: verErr } = await supabase.rpc("verify_admin_passcode", {
+      _passcode: passcode,
+    });
+    if (verErr) return json(500, { error: verErr.message });
+    if (!ok) return json(401, { error: "Invalid passcode" });
 
     // verify-only ping
     if (action === "verify") return json(200, { ok: true });
@@ -51,12 +51,13 @@ Deno.serve(async (req) => {
       if (!newPasscode || typeof newPasscode !== "string" || newPasscode.length < 4) {
         return json(400, { error: "New passcode must be at least 4 characters." });
       }
-      const { error: pErr } = await supabase
-        .from("admin_settings")
-        .upsert({ id: "current", passcode: newPasscode, updated_at: new Date().toISOString() });
+      const { error: pErr } = await supabase.rpc("set_admin_passcode", {
+        _new_passcode: newPasscode,
+      });
       if (pErr) return json(500, { error: pErr.message });
       return json(200, { ok: true, message: "Passcode updated." });
     }
+
 
     // Load current config
     const { data: row, error: readErr } = await supabase
