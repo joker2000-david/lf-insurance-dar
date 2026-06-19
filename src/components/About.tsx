@@ -39,7 +39,7 @@ const About = () => {
 
   const values = [
     "Licensed by Tanzania Insurance Regulatory Authority (TIRA)",
-    "Member of Association of Tanzania Insurance Brokers (ATIB)",
+    "Member of Tanzania Insurance Brokers Association (TIBA)",
     "ISO 9001:2015 Quality Management System Certified",
     "Professional Indemnity Insurance Cover"
   ];
