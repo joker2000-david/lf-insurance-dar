@@ -29,7 +29,7 @@ const Hero = () => {
           <div className="text-primary-foreground animate-fade-up">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/20 border border-accent/40 backdrop-blur mb-6">
               <Shield className="h-4 w-4 text-accent" />
-              <span className="text-accent font-semibold text-xs tracking-widest uppercase">Licensed by TIRA · ATIB Member</span>
+              <span className="text-accent font-semibold text-xs tracking-widest uppercase">Licensed by TIRA · TIBA Member</span>
             </div>
 
             <h1 className="text-5xl lg:text-7xl font-bold leading-[1.05] mb-6 text-balance">
