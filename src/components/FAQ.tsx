@@ -20,7 +20,7 @@ const FAQ = () => {
     },
     {
       question: "Are you licensed to operate in Tanzania?",
-      answer: "Yes, LF Insurance Brokers is fully licensed by the Tanzania Insurance Regulatory Authority (TIRA) and is a registered member of the Association of Tanzania Insurance Brokers (ATIB). We maintain all required certifications and professional indemnity coverage."
+      answer: "Yes, LF Insurance Brokers is fully licensed by the Tanzania Insurance Regulatory Authority (TIRA) and is a registered member of the Tanzania Insurance Brokers Association (TIBA). We maintain all required certifications and professional indemnity coverage."
     },
     {
       question: "How quickly can I get an insurance quote?",
