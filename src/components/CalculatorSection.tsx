@@ -281,7 +281,6 @@ const CalculatorSection = () => {
           <TabsContent value="motor"><MotorCalculator /></TabsContent>
           <TabsContent value="family">
             <FamilyCalculator cfg={config} />
-            <RateTable cfg={config} />
           </TabsContent>
         </Tabs>
         <div className="mt-12 text-center text-sm text-muted-foreground max-w-2xl mx-auto">
