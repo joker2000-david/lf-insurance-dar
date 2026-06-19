@@ -241,10 +241,10 @@ export function computeMotorPremium(input: MotorQuoteInput): MotorQuoteResult {
     }
   }
 
-  // Age loading: 10% on Own Damage premium for vehicles older than 10 years (private cars and similar).
+  // Age loading: 10% on Own Damage premium for vehicles older than 10 years (motorcycles and three-wheelers only — private cars exempt).
   if (input.yearOfManufacture && input.cover === "comprehensive") {
     const age = new Date().getFullYear() - input.yearOfManufacture;
-    if (age >= 10 && (input.vehicleClass === "private_car" || input.vehicleClass === "motorcycle" || input.vehicleClass === "three_wheeler")) {
+    if (age >= 10 && (input.vehicleClass === "motorcycle" || input.vehicleClass === "three_wheeler")) {
       base = Math.round(base * 1.1);
       notes.push("10% loading applied (vehicle older than 10 years).");
     }
