@@ -150,7 +150,7 @@ const Footer = () => {
                 © 2025 LF Insurance Brokers Ltd. All rights reserved.
               </p>
               <p className="text-primary-foreground/60 text-xs mt-1">
-                Licensed by TIRA • Member of ATIB • Professional Indemnity Insured
+                Licensed by TIRA • Member of TIBA • Professional Indemnity Insured
               </p>
             </div>
 
