@@ -2,6 +2,7 @@ import {
   Car, Flame, Ship, Plane, HeartPulse, ShieldCheck, Settings, UserCheck, Users, Home,
   type LucideIcon,
 } from "lucide-react";
+import firePerilsImg from "@/assets/fire-perils.jpg";
 
 export type Service = {
   slug: string;
@@ -34,7 +35,7 @@ export const services: Service[] = [
       "Safeguard buildings, stock and equipment against fire, lightning, explosion, floods, earthquake and allied perils.",
     features: ["Buildings & Contents", "Stock & Inventory", "Loss of Profit", "Allied Perils"],
     icon: Flame,
-    image: "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=900&h=600&fit=crop",
+    image: firePerilsImg,
     accent: "text-accent",
   },
   {
