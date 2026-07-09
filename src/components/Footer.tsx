@@ -104,16 +104,23 @@ const Footer = () => {
               <div key={title}>
                 <h4 className="text-lg font-bold mb-6">{title}</h4>
                 <ul className="space-y-3">
-                  {links.map((link) => (
-                    <li key={link.label}>
-                      <a
-                        href={link.href}
-                        className="text-primary-foreground/80 hover:text-accent transition-colors duration-200 text-sm"
-                      >
-                        {link.label}
-                      </a>
-                    </li>
-                  ))}
+                  {links.map((link) => {
+                    const isExternal = /^(https?:|mailto:|tel:)/.test(link.href);
+                    const className = "text-primary-foreground/80 hover:text-accent transition-colors duration-200 text-sm";
+                    return (
+                      <li key={link.label}>
+                        {isExternal ? (
+                          <a href={link.href} target="_blank" rel="noopener noreferrer" className={className}>
+                            {link.label}
+                          </a>
+                        ) : (
+                          <Link to={link.href} onClick={scrollToTop} className={className}>
+                            {link.label}
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
