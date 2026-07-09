@@ -38,7 +38,13 @@ export function useCalculatorConfig() {
       .maybeSingle()
       .then(({ data }) => {
         if (!active) return;
-        if (data?.data) setConfig({ ...DEFAULTS, ...(data.data as any) });
+        // Only merge motorRates from DB; medical plan structure is always sourced
+        // from code to avoid stale/legacy keys (e.g. "Option 1..4") leaking in.
+        const remote = (data?.data as any) ?? {};
+        setConfig({
+          ...DEFAULTS,
+          motorRates: remote.motorRates ?? DEFAULTS.motorRates,
+        });
         setLoading(false);
       });
     return () => { active = false; };
