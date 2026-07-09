@@ -236,31 +236,7 @@ const FamilyCalculator = ({ cfg }: { cfg: CalculatorConfig }) => {
 };
 
 
-const RateTable = ({ cfg }: { cfg: CalculatorConfig }) => (
-  <Card className="mt-10 shadow-md">
-    <CardHeader><CardTitle>Medical Plans — Annual Rates per Member (TZS)</CardTitle></CardHeader>
-    <CardContent className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-muted/50">
-            <th className="p-2 text-left">Age Band</th>
-            {cfg.medicalPlans.map((p) => <th key={p.key} className="p-2 text-right">{p.key}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          {cfg.ageBands.map((band) => (
-            <tr key={band} className="border-b hover:bg-muted/30">
-              <td className="p-2 font-medium">{band}</td>
-              {cfg.medicalPlans.map((p) => (
-                <td key={p.key} className="p-2 text-right">{(cfg.premiumRates[band]?.[p.key] ?? 0).toLocaleString()}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </CardContent>
-  </Card>
-);
+
 
 const CalculatorSection = () => {
   const { config } = useCalculatorConfig();
