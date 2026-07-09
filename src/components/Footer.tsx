@@ -35,11 +35,11 @@ const Footer = () => {
       { label: "Blog", href: "/blog" },
     ],
     "Legal": [
-      { label: "Privacy Policy", href: "#" },
-      { label: "Terms of Service", href: "#" },
-      { label: "Claims Policy", href: "#" },
-      { label: "Complaints Procedure", href: "#" },
-      { label: "Regulatory Information", href: "#" },
+      { label: "Privacy Policy", href: "/faq" },
+      { label: "Terms of Service", href: "/faq" },
+      { label: "Claims Policy", href: "/contact" },
+      { label: "Complaints Procedure", href: "/contact" },
+      { label: "Regulatory Information", href: "/about" },
     ],
   };
 
