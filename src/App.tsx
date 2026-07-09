@@ -13,6 +13,11 @@ import FAQPage from "./pages/FAQ";
 import QuotePage from "./pages/Quote";
 import CalculatorPage from "./pages/Calculator";
 import AdminPage from "./pages/Admin";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import ClaimsPolicy from "./pages/ClaimsPolicy";
+import ComplaintsProcedure from "./pages/ComplaintsProcedure";
+import RegulatoryInformation from "./pages/RegulatoryInformation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +51,11 @@ const App = () => (
           <Route path="/quote" element={<QuotePage />} />
           <Route path="/calculator" element={<CalculatorPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
+          <Route path="/claims-policy" element={<ClaimsPolicy />} />
+          <Route path="/complaints-procedure" element={<ComplaintsProcedure />} />
+          <Route path="/regulatory-information" element={<RegulatoryInformation />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
