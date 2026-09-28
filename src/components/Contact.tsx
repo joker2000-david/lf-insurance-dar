@@ -15,7 +15,7 @@ const Contact = () => {
     {
       icon: MapPin,
       title: "Visit Our Office",
-      details: ["Dar es Salaam, Tanzania", "Near Kariakoo Market", "Ground Floor, LF Building"],
+      details: ["6th Floor, Tiger Tower Building", "Kinondoni Road, Dar es Salaam", "P.O. Box 7881, DSM"],
       color: "text-blue-600"
     },
     {

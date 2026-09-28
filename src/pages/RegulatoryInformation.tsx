@@ -13,7 +13,7 @@ const RegulatoryInformation = () => (
         <h2>Company details</h2>
         <ul>
           <li><strong>Registered name:</strong> LF Insurance Brokers Ltd</li>
-          <li><strong>Head office:</strong> Dar es Salaam, Tanzania</li>
+          <li><strong>Head office:</strong> 6th Floor, Tiger Tower Building, Kinondoni Road, P.O. Box 7881, Dar es Salaam, Tanzania</li>
           <li><strong>Phone:</strong> <a href="tel:+255713464894">+255 713 464 894</a></li>
           <li><strong>Email:</strong> <a href="mailto:info@lfinsurance.co.tz">info@lfinsurance.co.tz</a></li>
         </ul>
