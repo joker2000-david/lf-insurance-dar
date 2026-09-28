@@ -82,7 +82,7 @@ const Footer = () => {
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
                   <MapPin className="h-5 w-5 text-accent" />
-                  <span className="text-sm">Dar es Salaam, Tanzania</span>
+                  <span className="text-sm">6th Floor, Tiger Tower Building, Kinondoni Road, P.O. Box 7881, Dar es Salaam</span>
                 </div>
                 <a href="tel:+255713464894" className="flex items-center space-x-3 hover:text-accent transition-colors">
                   <Phone className="h-5 w-5 text-accent" />
